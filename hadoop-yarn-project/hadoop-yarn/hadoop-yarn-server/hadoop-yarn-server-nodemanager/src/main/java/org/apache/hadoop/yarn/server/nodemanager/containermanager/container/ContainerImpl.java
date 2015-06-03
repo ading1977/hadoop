@@ -65,6 +65,7 @@ import org.apache.hadoop.yarn.server.nodemanager.containermanager.localizer.even
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.localizer.sharedcache.SharedCacheUploadEvent;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.localizer.sharedcache.SharedCacheUploadEventType;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.loghandler.event.LogHandlerContainerFinishedEvent;
+import org.apache.hadoop.yarn.server.nodemanager.containermanager.monitor.ContainerChangeMonitoringEvent;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.monitor.ContainerStartMonitoringEvent;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.monitor.ContainerStopMonitoringEvent;
 import org.apache.hadoop.yarn.server.nodemanager.metrics.NodeManagerMetrics;
@@ -91,7 +92,7 @@ public class ContainerImpl implements Container {
   private final ContainerLaunchContext launchContext;
   private final ContainerTokenIdentifier containerTokenIdentifier;
   private final ContainerId containerId;
-  private final Resource resource;
+  private Resource resource;
   private final String user;
   private int exitCode = ContainerExitStatus.INVALID;
   private final StringBuilder diagnostics;
@@ -249,12 +250,14 @@ public class ContainerImpl implements Container {
         ContainerEventType.KILL_CONTAINER, new KillTransition())
     .addTransition(ContainerState.RUNNING, ContainerState.EXITED_WITH_FAILURE,
         ContainerEventType.CONTAINER_KILLED_ON_REQUEST,
-        new KilledExternallyTransition()) 
+        new KilledExternallyTransition())
+    .addTransition(ContainerState.RUNNING, ContainerState.RUNNING,
+        ContainerEventType.CHANGE_CONTAINER, new ContainerResourceChangeTransition())
 
     // From CONTAINER_EXITED_WITH_SUCCESS State
-    .addTransition(ContainerState.EXITED_WITH_SUCCESS, ContainerState.DONE,
-        ContainerEventType.CONTAINER_RESOURCES_CLEANEDUP,
-        new ExitedWithSuccessToDoneTransition())
+              .addTransition(ContainerState.EXITED_WITH_SUCCESS, ContainerState.DONE,
+                      ContainerEventType.CONTAINER_RESOURCES_CLEANEDUP,
+                      new ExitedWithSuccessToDoneTransition())
     .addTransition(ContainerState.EXITED_WITH_SUCCESS,
         ContainerState.EXITED_WITH_SUCCESS,
         ContainerEventType.UPDATE_DIAGNOSTICS_MSG,
@@ -435,10 +438,10 @@ public class ContainerImpl implements Container {
     this.readLock.lock();
     try {
       return NMContainerStatus.newInstance(this.containerId, getCurrentState(),
-          getResource(), diagnostics.toString(), exitCode,
-          containerTokenIdentifier.getPriority(),
-          containerTokenIdentifier.getCreationTime(),
-          containerTokenIdentifier.getNodeLabelExpression());
+              getResource(), diagnostics.toString(), exitCode,
+              containerTokenIdentifier.getPriority(),
+              containerTokenIdentifier.getCreationTime(),
+              containerTokenIdentifier.getNodeLabelExpression());
     } finally {
       this.readLock.unlock();
     }
@@ -451,7 +454,12 @@ public class ContainerImpl implements Container {
 
   @Override
   public Resource getResource() {
-    return this.resource;
+    this.readLock.lock();
+    try {
+      return this.resource;
+    } finally {
+      this.readLock.unlock();
+    }
   }
 
   @Override
@@ -474,7 +482,7 @@ public class ContainerImpl implements Container {
     eventHandler.handle(new ContainerStopMonitoringEvent(containerId));
     // Tell the logService too
     eventHandler.handle(new LogHandlerContainerFinishedEvent(
-      containerId, exitCode));
+            containerId, exitCode));
   }
 
   @SuppressWarnings("unchecked") // dispatcher not typed
@@ -487,7 +495,7 @@ public class ContainerImpl implements Container {
     }
     containerLaunchStartTime = clock.getTime();
     dispatcher.getEventHandler().handle(
-        new ContainersLauncherEvent(this, launcherEvent));
+            new ContainersLauncherEvent(this, launcherEvent));
   }
 
   // Inform the ContainersMonitor to start monitoring the container's
@@ -509,6 +517,21 @@ public class ContainerImpl implements Container {
         new ContainerStartMonitoringEvent(containerId,
         vmemBytes, pmemBytes, cpuVcores, launchDuration,
         localizationDuration));
+  }
+
+  // Inform the ContainersMonitor that the container's resource usage
+  // has changed, and monitor accordingly.
+  @SuppressWarnings("unchecked")
+  private void sendContainerMonitorChangeEvent() {
+    long pmemBytes = getResource().getMemory() * 1024 * 1024L;
+    float pmemRatio = daemonConf.getFloat(
+            YarnConfiguration.NM_VMEM_PMEM_RATIO,
+            YarnConfiguration.DEFAULT_NM_VMEM_PMEM_RATIO);
+    long vmemBytes = (long) (pmemRatio * pmemBytes);
+    int cpuVcores = getResource().getVirtualCores();
+    dispatcher.getEventHandler().handle(
+        new ContainerChangeMonitoringEvent(containerId,
+                vmemBytes, pmemBytes, cpuVcores));
   }
 
   private void addDiagnostics(String... diags) {
@@ -772,6 +795,19 @@ public class ContainerImpl implements Container {
             new ContainersLauncherEvent(container,
                 ContainersLauncherEventType.CLEANUP_CONTAINER));
       }
+    }
+  }
+
+  static class ContainerResourceChangeTransition extends ContainerTransition {
+    @SuppressWarnings("unchecked")
+    @Override
+    public void transition(ContainerImpl container, ContainerEvent event) {
+      ContainerChangeEvent changeEvent = (ContainerChangeEvent)event;
+      Resource currentResource = container.getResource();
+      Resource targetResource = changeEvent.getResource();
+      container.resource = targetResource;
+      container.metrics.changeContainer(currentResource, targetResource);
+      container.sendContainerMonitorChangeEvent();
     }
   }
 

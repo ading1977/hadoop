@@ -25,6 +25,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.hadoop.yarn.api.protocolrecords.ChangeContainersResourceRequest;
+import org.apache.hadoop.yarn.api.protocolrecords.ChangeContainersResourceResponse;
 import org.junit.Assert;
 
 import org.apache.commons.logging.Log;
@@ -293,6 +295,13 @@ public class NodeManager implements ContainerManagementProtocol {
       }
     }
     return GetContainerStatusesResponse.newInstance(statuses, null);
+  }
+
+  @Override
+  public ChangeContainersResourceResponse changeContainersResource(
+          ChangeContainersResourceRequest request) throws YarnException,
+          IOException {
+    return null;
   }
 
   public static org.apache.hadoop.yarn.server.api.records.NodeStatus 

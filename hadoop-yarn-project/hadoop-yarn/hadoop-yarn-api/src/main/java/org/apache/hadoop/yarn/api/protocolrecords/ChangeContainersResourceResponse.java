@@ -44,11 +44,11 @@ public abstract class ChangeContainersResourceResponse {
   @Public
   @Stable
   public static ChangeContainersResourceResponse newInstance(
-      List<ContainerId> succeededChangedContainers,
+      List<ContainerId> successfullyChangedContainers,
       Map<ContainerId, SerializedException> failedRequests) {
     ChangeContainersResourceResponse response =
         Records.newRecord(ChangeContainersResourceResponse.class);
-    response.setSuccessfullyChangedContainers(succeededChangedContainers);
+    response.setSuccessfullyChangedContainers(successfullyChangedContainers);
     response.setFailedRequests(failedRequests);
     return response;
   }
