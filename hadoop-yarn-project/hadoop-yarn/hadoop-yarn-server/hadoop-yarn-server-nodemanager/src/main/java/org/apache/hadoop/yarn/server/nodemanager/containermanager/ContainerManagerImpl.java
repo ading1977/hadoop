@@ -287,7 +287,7 @@ public class ContainerManagerImpl extends CompositeService implements
     ApplicationId appId = new ApplicationIdPBImpl(p.getId());
     Credentials creds = new Credentials();
     creds.readTokenStorageStream(
-            new DataInputStream(p.getCredentials().newInput()));
+        new DataInputStream(p.getCredentials().newInput()));
 
     List<ApplicationACLMapProto> aclProtoList = p.getAclsList();
     Map<ApplicationAccessType, String> acls =
@@ -322,7 +322,7 @@ public class ContainerManagerImpl extends CompositeService implements
         containerId.getApplicationAttemptId().getApplicationId();
 
     LOG.info("Recovering " + containerId + " in state " + rcs.getStatus()
-            + " with exit code " + rcs.getExitCode());
+        + " with exit code " + rcs.getExitCode());
 
     if (context.getApplications().containsKey(appId)) {
       Credentials credentials = parseCredentials(launchContext);
@@ -367,7 +367,7 @@ public class ContainerManagerImpl extends CompositeService implements
   protected LogHandler createLogHandler(Configuration conf, Context context,
       DeletionService deletionService) {
     if (conf.getBoolean(YarnConfiguration.LOG_AGGREGATION_ENABLED,
-            YarnConfiguration.DEFAULT_LOG_AGGREGATION_ENABLED)) {
+        YarnConfiguration.DEFAULT_LOG_AGGREGATION_ENABLED)) {
       return new LogAggregationService(this.dispatcher, context,
           deletionService, dirsHandler);
     } else {
@@ -547,8 +547,8 @@ public class ContainerManagerImpl extends CompositeService implements
     List<ApplicationId> appIds =
         new ArrayList<ApplicationId>(applications.keySet());
     this.handle(
-            new CMgrCompletedAppsEvent(appIds,
-                    CMgrCompletedAppsEvent.Reason.ON_SHUTDOWN));
+        new CMgrCompletedAppsEvent(appIds,
+            CMgrCompletedAppsEvent.Reason.ON_SHUTDOWN));
 
     LOG.info("Waiting for Applications to be Finished");
 
@@ -568,7 +568,7 @@ public class ContainerManagerImpl extends CompositeService implements
       LOG.info("All applications in FINISHED state");
     } else {
       LOG.info("Done waiting for Applications to be Finished. Still alive: " +
-              applications.keySet());
+          applications.keySet());
     }
   }
 
@@ -587,7 +587,7 @@ public class ContainerManagerImpl extends CompositeService implements
     LOG.info("Waiting for containers to be killed");
 
     this.handle(new CMgrCompletedContainersEvent(containerIds,
-            CMgrCompletedContainersEvent.Reason.ON_NODEMANAGER_RESYNC));
+      CMgrCompletedContainersEvent.Reason.ON_NODEMANAGER_RESYNC));
 
     /*
      * We will wait till all the containers change their state to COMPLETE. We
@@ -616,7 +616,7 @@ public class ContainerManagerImpl extends CompositeService implements
       LOG.info("All containers in DONE state");
     } else {
       LOG.info("Done waiting for containers to be killed. Still alive: " +
-              containers.keySet());
+        containers.keySet());
     }
   }
 
@@ -762,7 +762,7 @@ public class ContainerManagerImpl extends CompositeService implements
     }
 
     return StartContainersResponse.newInstance(getAuxServiceMetaData(),
-            succeededContainers, failedContainers);
+      succeededContainers, failedContainers);
   }
 
   private ContainerManagerApplicationProto buildAppProto(ApplicationId appId,
@@ -865,8 +865,8 @@ public class ContainerManagerImpl extends CompositeService implements
         containerId.getApplicationAttemptId().getApplicationId();
     if (context.getContainers().putIfAbsent(containerId, container) != null) {
       NMAuditLogger.logFailure(user, AuditConstants.START_CONTAINER,
-              "ContainerManagerImpl", "Container already running on this node!",
-              applicationID, containerId);
+        "ContainerManagerImpl", "Container already running on this node!",
+        applicationID, containerId);
       throw RPCUtil.getRemoteException("Container " + containerIdStr
           + " already is running on this node!!");
     }
@@ -920,7 +920,7 @@ public class ContainerManagerImpl extends CompositeService implements
       InvalidToken {
     byte[] password =
         context.getContainerTokenSecretManager().retrievePassword(
-                containerTokenIdentifier);
+          containerTokenIdentifier);
     byte[] tokenPass = token.getPassword().array();
     if (password == null || tokenPass == null
         || !Arrays.equals(password, tokenPass)) {

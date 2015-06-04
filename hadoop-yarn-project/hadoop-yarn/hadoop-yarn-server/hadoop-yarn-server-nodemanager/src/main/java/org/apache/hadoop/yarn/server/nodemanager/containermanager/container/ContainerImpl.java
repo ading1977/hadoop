@@ -255,9 +255,9 @@ public class ContainerImpl implements Container {
         ContainerEventType.CHANGE_CONTAINER, new ContainerResourceChangeTransition())
 
     // From CONTAINER_EXITED_WITH_SUCCESS State
-              .addTransition(ContainerState.EXITED_WITH_SUCCESS, ContainerState.DONE,
-                      ContainerEventType.CONTAINER_RESOURCES_CLEANEDUP,
-                      new ExitedWithSuccessToDoneTransition())
+    .addTransition(ContainerState.EXITED_WITH_SUCCESS, ContainerState.DONE,
+        ContainerEventType.CONTAINER_RESOURCES_CLEANEDUP,
+        new ExitedWithSuccessToDoneTransition())
     .addTransition(ContainerState.EXITED_WITH_SUCCESS,
         ContainerState.EXITED_WITH_SUCCESS,
         ContainerEventType.UPDATE_DIAGNOSTICS_MSG,
@@ -438,10 +438,10 @@ public class ContainerImpl implements Container {
     this.readLock.lock();
     try {
       return NMContainerStatus.newInstance(this.containerId, getCurrentState(),
-              getResource(), diagnostics.toString(), exitCode,
-              containerTokenIdentifier.getPriority(),
-              containerTokenIdentifier.getCreationTime(),
-              containerTokenIdentifier.getNodeLabelExpression());
+          getResource(), diagnostics.toString(), exitCode,
+          containerTokenIdentifier.getPriority(),
+          containerTokenIdentifier.getCreationTime(),
+          containerTokenIdentifier.getNodeLabelExpression());
     } finally {
       this.readLock.unlock();
     }
@@ -482,7 +482,7 @@ public class ContainerImpl implements Container {
     eventHandler.handle(new ContainerStopMonitoringEvent(containerId));
     // Tell the logService too
     eventHandler.handle(new LogHandlerContainerFinishedEvent(
-            containerId, exitCode));
+      containerId, exitCode));
   }
 
   @SuppressWarnings("unchecked") // dispatcher not typed
@@ -495,7 +495,7 @@ public class ContainerImpl implements Container {
     }
     containerLaunchStartTime = clock.getTime();
     dispatcher.getEventHandler().handle(
-            new ContainersLauncherEvent(this, launcherEvent));
+        new ContainersLauncherEvent(this, launcherEvent));
   }
 
   // Inform the ContainersMonitor to start monitoring the container's

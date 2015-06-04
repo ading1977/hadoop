@@ -99,7 +99,7 @@ public class ContainerManagementProtocolPBClientImpl implements ContainerManagem
         ((StartContainersRequestPBImpl) requests).getProto();
     try {
       return new StartContainersResponsePBImpl(proxy.startContainers(null,
-              requestProto));
+        requestProto));
     } catch (ServiceException e) {
       RPCUtil.unwrapAndThrowException(e);
       return null;
@@ -113,7 +113,7 @@ public class ContainerManagementProtocolPBClientImpl implements ContainerManagem
         ((StopContainersRequestPBImpl) requests).getProto();
     try {
       return new StopContainersResponsePBImpl(proxy.stopContainers(null,
-              requestProto));
+        requestProto));
     } catch (ServiceException e) {
       RPCUtil.unwrapAndThrowException(e);
       return null;
@@ -127,7 +127,7 @@ public class ContainerManagementProtocolPBClientImpl implements ContainerManagem
         ((GetContainerStatusesRequestPBImpl) request).getProto();
     try {
       return new GetContainerStatusesResponsePBImpl(proxy.getContainerStatuses(
-              null, requestProto));
+        null, requestProto));
     } catch (ServiceException e) {
       RPCUtil.unwrapAndThrowException(e);
       return null;
