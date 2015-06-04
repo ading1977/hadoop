@@ -104,9 +104,11 @@ public class ContainerManagementProtocolPBServiceImpl implements ContainerManage
   public ChangeContainersResourceResponseProto changeContainersResource(
           RpcController controller, ChangeContainersResourceRequestProto proto)
           throws ServiceException {
-    ChangeContainersResourceRequestPBImpl request = new ChangeContainersResourceRequestPBImpl(proto);
+    ChangeContainersResourceRequestPBImpl request =
+            new ChangeContainersResourceRequestPBImpl(proto);
     try {
-      ChangeContainersResourceResponse response = real.changeContainersResource(request);
+      ChangeContainersResourceResponse response =
+              real.changeContainersResource(request);
       return ((ChangeContainersResourceResponsePBImpl)response).getProto();
     } catch (YarnException e) {
       throw new ServiceException(e);

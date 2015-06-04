@@ -120,7 +120,8 @@ public class ChangeContainersResourceResponsePBImpl extends
   }
 
   @Override
-  public void setSuccessfullyChangedContainers(List<ContainerId> succeededRequests) {
+  public void setSuccessfullyChangedContainers(
+          List<ContainerId> succeededRequests) {
     maybeInitBuilder();
     if (succeededRequests == null) {
       builder.clearSucceededRequests();
@@ -183,8 +184,9 @@ public class ChangeContainersResourceResponsePBImpl extends
   public void setFailedRequests(
           Map<ContainerId, SerializedException> failedRequests) {
     maybeInitBuilder();
-    if (failedRequests == null)
+    if (failedRequests == null) {
       builder.clearFailedRequests();
+    }
     this.failedRequests = failedRequests;
   }
 
@@ -192,7 +194,8 @@ public class ChangeContainersResourceResponsePBImpl extends
     if (this.failedRequests != null) {
       return;
     }
-    ChangeContainersResourceResponseProtoOrBuilder p = viaProto ? proto : builder;
+    ChangeContainersResourceResponseProtoOrBuilder
+            p = viaProto ? proto : builder;
     List<ContainerExceptionMapProto> protoList = p.getFailedRequestsList();
     this.failedRequests = new HashMap<ContainerId, SerializedException>();
     for (ContainerExceptionMapProto ce : protoList) {
@@ -204,8 +207,9 @@ public class ChangeContainersResourceResponsePBImpl extends
   private void addFailedRequestsToProto() {
     maybeInitBuilder();
     builder.clearFailedRequests();
-    if (this.failedRequests == null)
+    if (this.failedRequests == null) {
       return;
+    }
     List<ContainerExceptionMapProto> protoList =
             new ArrayList<ContainerExceptionMapProto>();
 

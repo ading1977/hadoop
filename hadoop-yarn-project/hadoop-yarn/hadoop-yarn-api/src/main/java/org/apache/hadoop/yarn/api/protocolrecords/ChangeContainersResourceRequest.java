@@ -36,7 +36,8 @@ import org.apache.hadoop.yarn.util.Records;
  * <code>ApplicationMaster</code> has to provide the container ID and the
  * target resource capability.</p>
  *
- * @see ContainerManagementProtocol#changeContainersResource(ChangeContainersResourceRequest)
+ * @see ContainerManagementProtocol
+ *      #changeContainersResource(ChangeContainersResourceRequest)
  */
 @Public
 @Stable
@@ -54,8 +55,8 @@ public abstract class ChangeContainersResourceRequest {
   }
 
   /**
-   * Get a list of container tokens to be used for authorization during container
-   * resource increase.
+   * Get a list of container tokens to be used for authorization during
+   * container resource increase.
    * <p>
    * Note: {@link NMToken} will be used for authenticating communication with
    * {@code NodeManager}.
@@ -70,11 +71,12 @@ public abstract class ChangeContainersResourceRequest {
 
   /**
    * Set container tokens to be used during container resource increase.
-   * The token is acquired from <code>AllocateResponse.getIncreasedContainers</code>.
+   * The token is acquired from
+   * <code>AllocateResponse.getIncreasedContainers</code>.
    * The token contains the container id and resource capability required for
    * container resource increase.
-   * @param containersToIncrease the list of container tokens to be used for container
-   *                             resource increase.
+   * @param containersToIncrease the list of container tokens to be used
+   *                             for container resource increase.
    */
   @Public
   @Stable
@@ -91,7 +93,8 @@ public abstract class ChangeContainersResourceRequest {
 
   /**
    * Set the list of containers whose resource is to be decreased.
-   * @param containersToDecrease the list of containers whose resource is to be decreased.
+   * @param containersToDecrease the list of containers whose resource is
+   *                             to be decreased.
    */
   @Public
   @Stable

@@ -138,9 +138,11 @@ public class ContainerManagementProtocolPBClientImpl implements ContainerManagem
   public ChangeContainersResourceResponse changeContainersResource(
           ChangeContainersResourceRequest request) throws YarnException,
           IOException {
-    ChangeContainersResourceRequestProto requestProto = ((ChangeContainersResourceRequestPBImpl)request).getProto();
+    ChangeContainersResourceRequestProto requestProto =
+            ((ChangeContainersResourceRequestPBImpl)request).getProto();
     try {
-      return new ChangeContainersResourceResponsePBImpl(proxy.changeContainersResource(null, requestProto));
+      return new ChangeContainersResourceResponsePBImpl(
+              proxy.changeContainersResource(null, requestProto));
     } catch (ServiceException e) {
       RPCUtil.unwrapAndThrowException(e);
       return null;

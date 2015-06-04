@@ -42,7 +42,7 @@ import org.apache.hadoop.yarn.exceptions.YarnException;
  * <p>The protocol between an <code>ApplicationMaster</code> and a 
  * <code>NodeManager</code> to start/stop and change resource of containers
  * and to get status of running containers.</p>
- * 
+ *
  * <p>If security is enabled the <code>NodeManager</code> verifies that the
  * <code>ApplicationMaster</code> has truly been allocated the container
  * by the <code>ResourceManager</code> and also verifies all interactions such 
@@ -175,15 +175,15 @@ public interface ContainerManagementProtocol {
 
   /**
    * <p>
-   * The API used by the <code>ApplicationMaster</code> to request for resource change
-   * of running containers on the <code>NodeManager</code>.
+   * The API used by the <code>ApplicationMaster</code> to request for
+   * resource change of running containers on the <code>NodeManager</code>.
    * </p>
    *
    * @param request
    *          request to change resource of a list of containers
-   * @return response which includes a list of containerIds of containers whose resource
-   *         has been successfully changed and a containerId-to-exception map for failed
-   *         requests.
+   * @return response which includes a list of containerIds of containers
+   *         whose resource has been successfully changed and a
+   *         containerId-to-exception map for failed requests.
    *
    * @throws YarnException
    * @throws IOException

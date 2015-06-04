@@ -304,7 +304,7 @@ public class NodeManager implements ContainerManagementProtocol {
     return null;
   }
 
-  public static org.apache.hadoop.yarn.server.api.records.NodeStatus 
+  public static org.apache.hadoop.yarn.server.api.records.NodeStatus
   createNodeStatus(NodeId nodeId, List<ContainerStatus> containers) {
     RecordFactory recordFactory = RecordFactoryProvider.getRecordFactory(null);
     org.apache.hadoop.yarn.server.api.records.NodeStatus nodeStatus = 

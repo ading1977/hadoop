@@ -35,7 +35,8 @@ import java.util.Map;
  * <code>ApplicationMaster</code> when asked to change container resource.
  * </p>
  *
- * @see ContainerManagementProtocol#changeContainersResource(ChangeContainersResourceRequest)
+ * @see ContainerManagementProtocol#
+ *      changeContainersResource(ChangeContainersResourceRequest)
  */
 
 @Public
@@ -74,16 +75,16 @@ public abstract class ChangeContainersResourceResponse {
       List<ContainerId> succeedIncreasedContainers);
 
   /**
-   * Get the containerId-to-exception map in which the exception indicates error
-   * from each container for failed requests
+   * Get the containerId-to-exception map in which the exception indicates
+   * error from each container for failed requests.
    */
   @Public
   @Stable
   public abstract Map<ContainerId, SerializedException> getFailedRequests();
 
   /**
-   * Set the containerId-to-exception map in which the exception indicates error
-   * from each container for failed requests
+   * Set the containerId-to-exception map in which the exception indicates
+   * error from each container for failed requests.
    */
   @Private
   @Stable

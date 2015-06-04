@@ -210,8 +210,8 @@ public class ChangeContainersResourceRequestPBImpl extends
     if (this.containersToDecrease == null) {
       return;
     }
-    Iterable<ContainerResourceDecreaseProto> iterable =
-      new Iterable<ContainerResourceDecreaseProto>() {
+    Iterable<ContainerResourceDecreaseProto> iterable = new
+            Iterable<ContainerResourceDecreaseProto>() {
         @Override
         public Iterator<ContainerResourceDecreaseProto> iterator() {
           return new Iterator<ContainerResourceDecreaseProto>() {
