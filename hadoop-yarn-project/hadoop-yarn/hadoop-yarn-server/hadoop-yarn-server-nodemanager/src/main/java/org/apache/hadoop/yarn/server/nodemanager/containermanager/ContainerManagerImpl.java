@@ -1000,7 +1000,7 @@ public class ContainerManagerImpl extends CompositeService implements
     if (nmTokenIdentifier == null) {
       throw RPCUtil.getRemoteException(INVALID_NMTOKEN_MSG);
     }
-    if (nmTokenIdentifier.getApplicationAttemptId().getApplicationId().
+    if (!nmTokenIdentifier.getApplicationAttemptId().getApplicationId().
             equals(containerId.getApplicationAttemptId().getApplicationId())) {
       StringBuilder messageBuilder =
               new StringBuilder("Unauthorized request to decrease container resource. ");
@@ -1126,7 +1126,6 @@ public class ContainerManagerImpl extends CompositeService implements
               + " is the same as the current resource");
     }
     if (!increase) {
-
       if (!Resources.fitsIn(Resources.none(), targetResource)
              || !Resources.fitsIn(targetResource, currentResource)) {
         throw RPCUtil.getRemoteException("The target resource "

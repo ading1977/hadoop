@@ -587,7 +587,27 @@ public class TestContainer {
       }
     }
   }
-  
+
+  @Test
+  public void testChangeResourceAfterRun() throws Exception {
+    WrappedContainer wc = null;
+    try {
+      wc = new WrappedContainer(13, 314159265358979L, 4344, "yak");
+      wc.initContainer();
+      wc.localizeResources();
+      wc.launchContainer();
+      Resource targetResource = Resource.newInstance(2048, 2);
+      wc.changeContainer(targetResource);
+      assertEquals(ContainerState.RUNNING,
+              wc.c.getContainerState());
+      assertEquals(wc.c.getResource(), targetResource);
+    } finally {
+      if (wc != null) {
+        wc.finished();
+      }
+    }
+  }
+
   private void verifyCleanupCall(WrappedContainer wc) throws Exception {
     ResourcesReleasedMatcher matchesReq =
         new ResourcesReleasedMatcher(wc.localResources, EnumSet.of(
@@ -904,6 +924,11 @@ public class TestContainer {
 
     public void launchContainer() {
       c.handle(new ContainerEvent(cId, ContainerEventType.CONTAINER_LAUNCHED));
+      drainDispatcherEvents();
+    }
+
+    public void changeContainer(Resource resource) {
+      c.handle(new ContainerChangeEvent(cId, resource));
       drainDispatcherEvents();
     }
 

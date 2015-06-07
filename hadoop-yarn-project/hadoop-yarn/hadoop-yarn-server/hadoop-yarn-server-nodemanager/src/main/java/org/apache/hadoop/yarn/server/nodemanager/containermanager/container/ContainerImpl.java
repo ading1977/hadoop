@@ -456,7 +456,8 @@ public class ContainerImpl implements Container {
   public Resource getResource() {
     this.readLock.lock();
     try {
-      return this.resource;
+      return Resource.newInstance(this.resource.getMemory(),
+              this.resource.getVirtualCores());
     } finally {
       this.readLock.unlock();
     }

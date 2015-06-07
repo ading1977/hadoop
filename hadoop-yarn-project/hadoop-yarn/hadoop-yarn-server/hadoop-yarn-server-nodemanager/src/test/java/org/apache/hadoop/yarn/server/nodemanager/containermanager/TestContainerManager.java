@@ -38,6 +38,8 @@ import org.apache.hadoop.fs.UnsupportedFileSystemException;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.service.Service;
 import org.apache.hadoop.util.Shell;
+import org.apache.hadoop.yarn.api.protocolrecords.ChangeContainersResourceRequest;
+import org.apache.hadoop.yarn.api.protocolrecords.ChangeContainersResourceResponse;
 import org.apache.hadoop.yarn.api.protocolrecords.GetContainerStatusesRequest;
 import org.apache.hadoop.yarn.api.protocolrecords.GetContainerStatusesResponse;
 import org.apache.hadoop.yarn.api.protocolrecords.StartContainerRequest;
@@ -53,6 +55,7 @@ import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ContainerExitStatus;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
+import org.apache.hadoop.yarn.api.records.ContainerResourceDecrease;
 import org.apache.hadoop.yarn.api.records.ContainerState;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
 import org.apache.hadoop.yarn.api.records.LocalResource;
@@ -879,6 +882,184 @@ public class TestContainerManager extends BaseContainerManagerTest {
         ContainerManagerImpl.INVALID_CONTAINERTOKEN_MSG);
   }
 
+  @Test
+  public void testChangeContainerResourceWithInvalidRequests() throws Exception {
+    containerManager.start();
+    // Start 4 containers 0..4 with default resource (1024, 1)
+    List<StartContainerRequest> list = new ArrayList<>();
+    ContainerLaunchContext containerLaunchContext = recordFactory
+            .newRecordInstance(ContainerLaunchContext.class);
+    for (int i = 0; i < 4; i++) {
+      ContainerId cId = createContainerId(i);
+      long identifier = DUMMY_RM_IDENTIFIER;
+      Token containerToken = createContainerToken(cId, identifier,
+          context.getNodeId(), user, context.getContainerTokenSecretManager());
+      StartContainerRequest request = StartContainerRequest.newInstance(
+              containerLaunchContext, containerToken);
+      list.add(request);
+    }
+    StartContainersRequest requestList = StartContainersRequest
+            .newInstance(list);
+    StartContainersResponse response = containerManager
+            .startContainers(requestList);
+
+    Assert.assertEquals(4, response.getSuccessfullyStartedContainers().size());
+    int i = 0;
+    for (ContainerId id : response.getSuccessfullyStartedContainers()) {
+      Assert.assertEquals(i, id.getContainerId());
+      i++;
+    }
+
+    // Construct container resource change request,
+    List<Token> increaseTokens = new ArrayList<Token>();
+    List<ContainerResourceDecrease> decreases = new ArrayList<>();
+    // Add increase request for container-0, the request will fail as the
+    // container's state in CM will not be RUNNING
+    ContainerId cId0 = createContainerId(0);
+    Token containerToken =
+            createContainerToken(cId0, DUMMY_RM_IDENTIFIER,
+                    context.getNodeId(), user,
+                    Resource.newInstance(1234, 3),
+                    context.getContainerTokenSecretManager(), null);
+    increaseTokens.add(containerToken);
+    // Add both increase and decrease request for container-2, the request
+    // will fail as increase and decrease request cannot be applied to the
+    // same container in the same request
+    ContainerId cId2 = createContainerId(2);
+    containerToken =
+            createContainerToken(cId2, DUMMY_RM_IDENTIFIER,
+                    context.getNodeId(), user,
+                    Resource.newInstance(1234, 3),
+                    context.getContainerTokenSecretManager(), null);
+    increaseTokens.add(containerToken);
+    ContainerResourceDecrease decrease =
+            ContainerResourceDecrease.newInstance(cId2,
+                    Resource.newInstance(512, 3));
+    decreases.add(decrease);
+    // Add increase request for container-7, the request will fail as the
+    // container does not exist
+    ContainerId cId7 = createContainerId(7);
+    containerToken =
+            createContainerToken(cId7, DUMMY_RM_IDENTIFIER,
+                    context.getNodeId(), user,
+                    Resource.newInstance(1234, 3),
+                    context.getContainerTokenSecretManager(), null);
+    increaseTokens.add(containerToken);
+
+    ChangeContainersResourceRequest changeRequest =
+            ChangeContainersResourceRequest
+              .newInstance(increaseTokens, decreases);
+    ChangeContainersResourceResponse changeResponse =
+            containerManager.changeContainersResource(changeRequest);
+
+    // Check response
+    Assert.assertEquals(
+            0, changeResponse.getSuccessfullyChangedContainers().size());
+    Assert.assertEquals(3, changeResponse.getFailedRequests().size());
+    for (Map.Entry<ContainerId, SerializedException> entry : changeResponse
+            .getFailedRequests().entrySet()) {
+      Assert.assertNotNull("Failed message", entry.getValue().getMessage());
+      if (cId0.equals(entry.getKey())) {
+        Assert.assertTrue(entry.getValue().getMessage()
+          .contains("Resource can only be changed when a "
+                  + "container is in RUNNING state"));
+      } else if (cId2.equals(entry.getKey())) {
+        Assert.assertTrue(entry.getValue().getMessage()
+          .contains("Both resource increase and "
+                  + "decrease have been specified in the same request for "
+                  + "container " + cId2.toString()));
+      } else if (cId7.equals(entry.getKey())) {
+        Assert.assertTrue(entry.getValue().getMessage()
+                .contains("Container " + cId7.toString()
+                  + " is not handled by this NodeManager"));
+      } else {
+        throw new YarnException("Received failed request from wrong"
+                + " container: " + entry.getKey().toString());
+      }
+    }
+  }
+
+  @Test
+  public void testChangeContainerResourceWithInvalidResource() throws Exception {
+    containerManager.start();
+    File scriptFile = Shell.appendScriptExtension(tmpDir, "scriptFile");
+    PrintWriter fileWriter = new PrintWriter(scriptFile);
+    // Construct the Container-id
+    ContainerId cId = createContainerId(0);
+    if (Shell.WINDOWS) {
+      fileWriter.println("@ping -n 100 127.0.0.1 >nul");
+    } else {
+      fileWriter.write("\numask 0");
+      fileWriter.write("\nexec sleep 100");
+    }
+    fileWriter.close();
+    ContainerLaunchContext containerLaunchContext =
+            recordFactory.newRecordInstance(ContainerLaunchContext.class);
+    URL resource_alpha =
+            ConverterUtils.getYarnUrlFromPath(localFS
+                    .makeQualified(new Path(scriptFile.getAbsolutePath())));
+    LocalResource rsrc_alpha =
+            recordFactory.newRecordInstance(LocalResource.class);
+    rsrc_alpha.setResource(resource_alpha);
+    rsrc_alpha.setSize(-1);
+    rsrc_alpha.setVisibility(LocalResourceVisibility.APPLICATION);
+    rsrc_alpha.setType(LocalResourceType.FILE);
+    rsrc_alpha.setTimestamp(scriptFile.lastModified());
+    String destinationFile = "dest_file";
+    Map<String, LocalResource> localResources =
+            new HashMap<String, LocalResource>();
+    localResources.put(destinationFile, rsrc_alpha);
+    containerLaunchContext.setLocalResources(localResources);
+    List<String> commands =
+            Arrays.asList(Shell.getRunScriptCommand(scriptFile));
+    containerLaunchContext.setCommands(commands);
+
+    StartContainerRequest scRequest =
+        StartContainerRequest.newInstance(
+            containerLaunchContext,
+            createContainerToken(cId, DUMMY_RM_IDENTIFIER, context.getNodeId(),
+            user, context.getContainerTokenSecretManager()));
+    List<StartContainerRequest> list = new ArrayList<StartContainerRequest>();
+    list.add(scRequest);
+    StartContainersRequest allRequests =
+            StartContainersRequest.newInstance(list);
+    containerManager.startContainers(allRequests);
+    // Make sure the container reaches RUNNING state
+    BaseContainerManagerTest.waitForNMContainerState(containerManager, cId,
+            org.apache.hadoop.yarn.server.nodemanager.
+                    containermanager.container.ContainerState.RUNNING);
+    // Send container resource decrease request
+    List<ContainerResourceDecrease> decreases = new ArrayList<>();
+    // The request will fail because the target resource does not fit in
+    // the current resource.
+    ContainerResourceDecrease decrease =
+            ContainerResourceDecrease.newInstance(cId,
+                    Resource.newInstance(2048, 3));
+    decreases.add(decrease);
+    ChangeContainersResourceRequest changeRequest =
+            ChangeContainersResourceRequest
+                    .newInstance(null, decreases);
+    ChangeContainersResourceResponse changeResponse =
+            containerManager.changeContainersResource(changeRequest);
+    // Check response
+    Assert.assertEquals(
+            0, changeResponse.getSuccessfullyChangedContainers().size());
+    Assert.assertEquals(1, changeResponse.getFailedRequests().size());
+    for (Map.Entry<ContainerId, SerializedException> entry : changeResponse
+            .getFailedRequests().entrySet()) {
+      if (cId.equals(entry.getKey())) {
+        Assert.assertNotNull("Failed message", entry.getValue().getMessage());
+        Assert.assertTrue(entry.getValue().getMessage()
+                .contains("The target resource "
+                        + Resource.newInstance(2048, 3).toString()
+                        + " is not smaller than the current resource"));
+      } else {
+        throw new YarnException("Received failed request from wrong"
+                + " container: " + entry.getKey().toString());
+      }
+    }
+  }
+
   public static Token createContainerToken(ContainerId cId, long rmIdentifier,
       NodeId nodeId, String user,
       NMContainerTokenSecretManager containerTokenSecretManager)
@@ -893,8 +1074,17 @@ public class TestContainerManager extends BaseContainerManagerTest {
       LogAggregationContext logAggregationContext)
       throws IOException {
     Resource r = BuilderUtils.newResource(1024, 1);
+    return createContainerToken(cId, rmIdentifier, nodeId, user, r,
+            containerTokenSecretManager, logAggregationContext);
+  }
+
+  public static Token createContainerToken(ContainerId cId, long rmIdentifier,
+      NodeId nodeId, String user, Resource resource,
+      NMContainerTokenSecretManager containerTokenSecretManager,
+      LogAggregationContext logAggregationContext)
+      throws IOException {
     ContainerTokenIdentifier containerTokenIdentifier =
-        new ContainerTokenIdentifier(cId, nodeId.toString(), user, r,
+        new ContainerTokenIdentifier(cId, nodeId.toString(), user, resource,
           System.currentTimeMillis() + 100000L, 123, rmIdentifier,
           Priority.newInstance(0), 0, logAggregationContext, null);
     Token containerToken =
