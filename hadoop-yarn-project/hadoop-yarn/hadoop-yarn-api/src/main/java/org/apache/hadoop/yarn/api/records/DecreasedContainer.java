@@ -25,12 +25,12 @@ import org.apache.hadoop.yarn.util.Records;
  * Used by Application Master to ask Node Manager reduce size of a specified
  * container
  */
-public abstract class ContainerResourceDecrease {
+public abstract class DecreasedContainer {
   @Public
-  public static ContainerResourceDecrease newInstance(
+  public static DecreasedContainer newInstance(
       ContainerId existingContainerId, Resource targetCapability) {
-    ContainerResourceDecrease context = Records
-        .newRecord(ContainerResourceDecrease.class);
+    DecreasedContainer context = Records
+        .newRecord(DecreasedContainer.class);
     context.setContainerId(existingContainerId);
     context.setCapability(targetCapability);
     return context;
@@ -55,8 +55,8 @@ public abstract class ContainerResourceDecrease {
 
   @Override
   public boolean equals(Object other) {
-    if (other instanceof ContainerResourceDecrease) {
-      ContainerResourceDecrease ctx = (ContainerResourceDecrease)other;
+    if (other instanceof DecreasedContainer) {
+      DecreasedContainer ctx = (DecreasedContainer)other;
       
       if (getContainerId() == null && ctx.getContainerId() != null) {
         return false;

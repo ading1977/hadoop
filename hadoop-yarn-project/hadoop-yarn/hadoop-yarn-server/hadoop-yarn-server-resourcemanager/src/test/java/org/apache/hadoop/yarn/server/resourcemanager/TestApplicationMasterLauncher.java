@@ -32,8 +32,8 @@ import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.ContainerManagementProtocol;
 import org.apache.hadoop.yarn.api.protocolrecords.AllocateResponse;
-import org.apache.hadoop.yarn.api.protocolrecords.ChangeContainersResourceRequest;
-import org.apache.hadoop.yarn.api.protocolrecords.ChangeContainersResourceResponse;
+import org.apache.hadoop.yarn.api.protocolrecords.IncreaseContainersResourceRequest;
+import org.apache.hadoop.yarn.api.protocolrecords.IncreaseContainersResourceResponse;
 import org.apache.hadoop.yarn.api.protocolrecords.GetContainerStatusesRequest;
 import org.apache.hadoop.yarn.api.protocolrecords.GetContainerStatusesResponse;
 import org.apache.hadoop.yarn.api.protocolrecords.StartContainerRequest;
@@ -130,7 +130,7 @@ public class TestApplicationMasterLauncher {
     }
 
     @Override
-    public ChangeContainersResourceResponse changeContainersResource(ChangeContainersResourceRequest request)
+    public IncreaseContainersResourceResponse increaseContainersResource(IncreaseContainersResourceRequest request)
             throws YarnException {
       return null;
     }

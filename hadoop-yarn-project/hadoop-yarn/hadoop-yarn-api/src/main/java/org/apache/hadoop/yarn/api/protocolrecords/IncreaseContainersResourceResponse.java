@@ -36,20 +36,20 @@ import java.util.Map;
  * </p>
  *
  * @see ContainerManagementProtocol#
- *      changeContainersResource(ChangeContainersResourceRequest)
+ *      increaseContainersResource(IncreaseContainersResourceRequest)
  */
 
 @Public
 @Stable
-public abstract class ChangeContainersResourceResponse {
+public abstract class IncreaseContainersResourceResponse {
   @Public
   @Stable
-  public static ChangeContainersResourceResponse newInstance(
-      List<ContainerId> successfullyChangedContainers,
+  public static IncreaseContainersResourceResponse newInstance(
+      List<ContainerId> successfullyIncreasedContainers,
       Map<ContainerId, SerializedException> failedRequests) {
-    ChangeContainersResourceResponse response =
-        Records.newRecord(ChangeContainersResourceResponse.class);
-    response.setSuccessfullyChangedContainers(successfullyChangedContainers);
+    IncreaseContainersResourceResponse response =
+        Records.newRecord(IncreaseContainersResourceResponse.class);
+    response.setSuccessfullyIncreasedContainers(successfullyIncreasedContainers);
     response.setFailedRequests(failedRequests);
     return response;
   }
@@ -63,7 +63,7 @@ public abstract class ChangeContainersResourceResponse {
    */
   @Public
   @Stable
-  public abstract List<ContainerId> getSuccessfullyChangedContainers();
+  public abstract List<ContainerId> getSuccessfullyIncreasedContainers();
 
   /**
    * Set the list of containerIds of containers whose resource have
@@ -71,8 +71,8 @@ public abstract class ChangeContainersResourceResponse {
    */
   @Private
   @Stable
-  public abstract void setSuccessfullyChangedContainers(
-      List<ContainerId> succeedIncreasedContainers);
+  public abstract void setSuccessfullyIncreasedContainers(
+          List<ContainerId> succeedIncreasedContainers);
 
   /**
    * Get the containerId-to-exception map in which the exception indicates

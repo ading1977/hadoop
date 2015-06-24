@@ -25,6 +25,7 @@ import org.apache.hadoop.classification.InterfaceStability.Unstable;
 import org.apache.hadoop.classification.InterfaceStability.Stable;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
+import org.apache.hadoop.yarn.api.records.IncreasedContainer;
 import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.util.Records;
 
@@ -92,4 +93,8 @@ public abstract class NodeStatus {
   @Unstable
   public abstract void setContainersUtilization(
       ResourceUtilization containersUtilization);
+
+  public abstract List<IncreasedContainer> getIncreasedContainers();
+  public abstract void setIncreasedContainers(
+      List<IncreasedContainer> increasedContainers);
 }

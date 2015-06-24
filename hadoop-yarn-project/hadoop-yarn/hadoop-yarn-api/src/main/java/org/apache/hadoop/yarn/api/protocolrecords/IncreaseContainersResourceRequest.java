@@ -22,7 +22,6 @@ import java.util.List;
 import org.apache.hadoop.classification.InterfaceAudience.Public;
 import org.apache.hadoop.classification.InterfaceStability.Stable;
 import org.apache.hadoop.yarn.api.ContainerManagementProtocol;
-import org.apache.hadoop.yarn.api.records.ContainerResourceDecrease;
 import org.apache.hadoop.yarn.api.records.NMToken;
 import org.apache.hadoop.yarn.api.records.Token;
 import org.apache.hadoop.yarn.util.Records;
@@ -37,20 +36,18 @@ import org.apache.hadoop.yarn.util.Records;
  * target resource capability.</p>
  *
  * @see ContainerManagementProtocol
- *      #changeContainersResource(ChangeContainersResourceRequest)
+ *      #increaseContainersResource(IncreaseContainersResourceRequest)
  */
 @Public
 @Stable
-public abstract class ChangeContainersResourceRequest {
+public abstract class IncreaseContainersResourceRequest {
   @Public
   @Stable
-  public static ChangeContainersResourceRequest newInstance(
-      List<Token> containersToIncrease,
-      List<ContainerResourceDecrease> containersToDecrease) {
-    ChangeContainersResourceRequest request =
-        Records.newRecord(ChangeContainersResourceRequest.class);
+  public static IncreaseContainersResourceRequest newInstance(
+          List<Token> containersToIncrease) {
+    IncreaseContainersResourceRequest request =
+        Records.newRecord(IncreaseContainersResourceRequest.class);
     request.setContainersToIncrease(containersToIncrease);
-    request.setContainersToDecrease(containersToDecrease);
     return request;
   }
 
@@ -82,22 +79,4 @@ public abstract class ChangeContainersResourceRequest {
   @Stable
   public abstract void setContainersToIncrease(
       List<Token> containersToIncrease);
-
-  /**
-   * Get a list of containers whose resource is to be decreased.
-   * @return the list of containers whose resource is to be decreased.
-   */
-  @Public
-  @Stable
-  public abstract List<ContainerResourceDecrease> getContainersToDecrease();
-
-  /**
-   * Set the list of containers whose resource is to be decreased.
-   * @param containersToDecrease the list of containers whose resource is
-   *                             to be decreased.
-   */
-  @Public
-  @Stable
-  public abstract void setContainersToDecrease(
-      List<ContainerResourceDecrease> containersToDecrease);
 }

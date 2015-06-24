@@ -25,8 +25,8 @@ import org.apache.hadoop.yarn.api.protocolrecords.AllocateResponse;
 import org.apache.hadoop.yarn.api.protocolrecords.impl.pb.AllocateResponsePBImpl;
 import org.apache.hadoop.yarn.api.records.AMCommand;
 import org.apache.hadoop.yarn.api.records.Container;
-import org.apache.hadoop.yarn.api.records.ContainerResourceDecrease;
-import org.apache.hadoop.yarn.api.records.ContainerResourceIncrease;
+import org.apache.hadoop.yarn.api.records.DecreasedContainer;
+import org.apache.hadoop.yarn.api.records.IncreasedContainer;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
 import org.apache.hadoop.yarn.api.records.NMToken;
 import org.apache.hadoop.yarn.api.records.NodeReport;
@@ -55,17 +55,17 @@ public class TestAllocateResponse {
   @SuppressWarnings("deprecation")
   @Test
   public void testAllocateResponseWithIncDecContainers() {
-    List<ContainerResourceIncrease> incContainers =
-        new ArrayList<ContainerResourceIncrease>();
-    List<ContainerResourceDecrease> decContainers =
-        new ArrayList<ContainerResourceDecrease>();
+    List<IncreasedContainer> incContainers =
+        new ArrayList<IncreasedContainer>();
+    List<DecreasedContainer> decContainers =
+        new ArrayList<DecreasedContainer>();
     for (int i = 0; i < 3; i++) {
-      incContainers.add(ContainerResourceIncrease.newInstance(null,
-          Resource.newInstance(1024, i), null));
+      incContainers.add(IncreasedContainer.newInstance(null,
+              Resource.newInstance(1024, i), null));
     }
     for (int i = 0; i < 5; i++) {
-      decContainers.add(ContainerResourceDecrease.newInstance(null,
-          Resource.newInstance(1024, i)));
+      decContainers.add(DecreasedContainer.newInstance(null,
+              Resource.newInstance(1024, i)));
     }
 
     AllocateResponse r =

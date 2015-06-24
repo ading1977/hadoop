@@ -113,8 +113,8 @@ import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
 import org.apache.hadoop.yarn.api.records.ContainerReport;
-import org.apache.hadoop.yarn.api.records.ContainerResourceDecrease;
-import org.apache.hadoop.yarn.api.records.ContainerResourceIncrease;
+import org.apache.hadoop.yarn.api.records.DecreasedContainer;
+import org.apache.hadoop.yarn.api.records.IncreasedContainer;
 import org.apache.hadoop.yarn.api.records.ContainerResourceIncreaseRequest;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
 import org.apache.hadoop.yarn.api.records.LocalResource;
@@ -155,8 +155,8 @@ import org.apache.hadoop.yarn.api.records.impl.pb.ContainerIdPBImpl;
 import org.apache.hadoop.yarn.api.records.impl.pb.ContainerLaunchContextPBImpl;
 import org.apache.hadoop.yarn.api.records.impl.pb.ContainerPBImpl;
 import org.apache.hadoop.yarn.api.records.impl.pb.ContainerReportPBImpl;
-import org.apache.hadoop.yarn.api.records.impl.pb.ContainerResourceDecreasePBImpl;
-import org.apache.hadoop.yarn.api.records.impl.pb.ContainerResourceIncreasePBImpl;
+import org.apache.hadoop.yarn.api.records.impl.pb.DecreasedContainerPBImpl;
+import org.apache.hadoop.yarn.api.records.impl.pb.IncreasedContainerPBImpl;
 import org.apache.hadoop.yarn.api.records.impl.pb.ContainerResourceIncreaseRequestPBImpl;
 import org.apache.hadoop.yarn.api.records.impl.pb.ContainerStatusPBImpl;
 import org.apache.hadoop.yarn.api.records.impl.pb.LocalResourcePBImpl;
@@ -190,8 +190,8 @@ import org.apache.hadoop.yarn.proto.YarnProtos.ContainerIdProto;
 import org.apache.hadoop.yarn.proto.YarnProtos.ContainerLaunchContextProto;
 import org.apache.hadoop.yarn.proto.YarnProtos.ContainerProto;
 import org.apache.hadoop.yarn.proto.YarnProtos.ContainerReportProto;
-import org.apache.hadoop.yarn.proto.YarnProtos.ContainerResourceDecreaseProto;
-import org.apache.hadoop.yarn.proto.YarnProtos.ContainerResourceIncreaseProto;
+import org.apache.hadoop.yarn.proto.YarnProtos.DecreasedContainerProto;
+import org.apache.hadoop.yarn.proto.YarnProtos.IncreasedContainerProto;
 import org.apache.hadoop.yarn.proto.YarnProtos.ContainerResourceIncreaseRequestProto;
 import org.apache.hadoop.yarn.proto.YarnProtos.ContainerStatusProto;
 import org.apache.hadoop.yarn.proto.YarnProtos.LocalResourceProto;
@@ -467,8 +467,8 @@ public class TestPBImplRecords {
     generateByNewInstance(ContainerLaunchContext.class);
     generateByNewInstance(ApplicationSubmissionContext.class);
     generateByNewInstance(ContainerReport.class);
-    generateByNewInstance(ContainerResourceDecrease.class);
-    generateByNewInstance(ContainerResourceIncrease.class);
+    generateByNewInstance(DecreasedContainer.class);
+    generateByNewInstance(IncreasedContainer.class);
     generateByNewInstance(ContainerResourceIncreaseRequest.class);
     generateByNewInstance(ContainerStatus.class);
     generateByNewInstance(PreemptionContainer.class);
@@ -955,15 +955,15 @@ public class TestPBImplRecords {
   }
 
   @Test
-  public void testContainerResourceDecreasePBImpl() throws Exception {
-    validatePBImplRecord(ContainerResourceDecreasePBImpl.class,
-        ContainerResourceDecreaseProto.class);
+  public void testDecreasedContainerPBImpl() throws Exception {
+    validatePBImplRecord(DecreasedContainerPBImpl.class,
+        DecreasedContainerProto.class);
   }
 
   @Test
-  public void testContainerResourceIncreasePBImpl() throws Exception {
-    validatePBImplRecord(ContainerResourceIncreasePBImpl.class,
-        ContainerResourceIncreaseProto.class);
+  public void testIncreasedContainerPBImpl() throws Exception {
+    validatePBImplRecord(IncreasedContainerPBImpl.class,
+        IncreasedContainerProto.class);
   }
 
   @Test

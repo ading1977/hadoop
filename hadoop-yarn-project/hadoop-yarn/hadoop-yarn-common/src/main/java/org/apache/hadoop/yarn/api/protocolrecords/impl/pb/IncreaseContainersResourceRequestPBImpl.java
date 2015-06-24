@@ -25,40 +25,36 @@ import java.util.List;
 import org.apache.hadoop.classification.InterfaceAudience.Private;
 import org.apache.hadoop.classification.InterfaceStability.Unstable;
 import org.apache.hadoop.security.proto.SecurityProtos.TokenProto;
-import org.apache.hadoop.yarn.api.protocolrecords.ChangeContainersResourceRequest;
-import org.apache.hadoop.yarn.api.records.ContainerResourceDecrease;
+import org.apache.hadoop.yarn.api.protocolrecords.IncreaseContainersResourceRequest;
 import org.apache.hadoop.yarn.api.records.Token;
-import org.apache.hadoop.yarn.api.records.impl.pb.ContainerResourceDecreasePBImpl;
 import org.apache.hadoop.yarn.api.records.impl.pb.TokenPBImpl;
-import org.apache.hadoop.yarn.proto.YarnProtos.ContainerResourceDecreaseProto;
-import org.apache.hadoop.yarn.proto.YarnServiceProtos.ChangeContainersResourceRequestProto;
-import org.apache.hadoop.yarn.proto.YarnServiceProtos.ChangeContainersResourceRequestProtoOrBuilder;
+import org.apache.hadoop.yarn.proto.YarnServiceProtos.IncreaseContainersResourceRequestProto;
+import org.apache.hadoop.yarn.proto.YarnServiceProtos.IncreaseContainersResourceRequestProtoOrBuilder;
 
 import com.google.protobuf.TextFormat;
 
 @Private
 @Unstable
-public class ChangeContainersResourceRequestPBImpl extends
-        ChangeContainersResourceRequest {
-  ChangeContainersResourceRequestProto proto =
-          ChangeContainersResourceRequestProto.getDefaultInstance();
-  ChangeContainersResourceRequestProto.Builder builder = null;
+public class IncreaseContainersResourceRequestPBImpl extends
+        IncreaseContainersResourceRequest {
+  IncreaseContainersResourceRequestProto proto =
+          IncreaseContainersResourceRequestProto.getDefaultInstance();
+  IncreaseContainersResourceRequestProto.Builder builder = null;
   boolean viaProto = false;
 
   private List<Token> containersToIncrease = null;
-  private List<ContainerResourceDecrease> containersToDecrease = null;
 
-  public ChangeContainersResourceRequestPBImpl() {
-    builder = ChangeContainersResourceRequestProto.newBuilder();
+  public IncreaseContainersResourceRequestPBImpl() {
+    builder = IncreaseContainersResourceRequestProto.newBuilder();
   }
 
-  public ChangeContainersResourceRequestPBImpl(
-          ChangeContainersResourceRequestProto proto) {
+  public IncreaseContainersResourceRequestPBImpl(
+          IncreaseContainersResourceRequestProto proto) {
     this.proto = proto;
     viaProto = true;
   }
 
-  public ChangeContainersResourceRequestProto getProto() {
+  public IncreaseContainersResourceRequestProto getProto() {
     mergeLocalToProto();
     proto = viaProto ? proto : builder.build();
     viaProto = true;
@@ -90,9 +86,6 @@ public class ChangeContainersResourceRequestPBImpl extends
     if (this.containersToIncrease != null) {
       addIncreaseContainersToProto();
     }
-    if (this.containersToDecrease != null) {
-      addDecreaseContainersToProto();
-    }
   }
 
   private void mergeLocalToProto() {
@@ -106,7 +99,7 @@ public class ChangeContainersResourceRequestPBImpl extends
 
   private void maybeInitBuilder() {
     if (viaProto || builder == null) {
-      builder = ChangeContainersResourceRequestProto.newBuilder(proto);
+      builder = IncreaseContainersResourceRequestProto.newBuilder(proto);
     }
     viaProto = false;
   }
@@ -127,28 +120,11 @@ public class ChangeContainersResourceRequestPBImpl extends
     this.containersToIncrease.addAll(containersToIncrease);
   }
 
-  @Override
-  public List<ContainerResourceDecrease> getContainersToDecrease() {
-    initContainersToDecrease();
-    return this.containersToDecrease;
-  }
-
-  @Override
-  public void setContainersToDecrease(
-          List<ContainerResourceDecrease> containersToDecrease) {
-    if (containersToDecrease == null) {
-      return;
-    }
-    initContainersToDecrease();
-    this.containersToDecrease.clear();
-    this.containersToDecrease.addAll(containersToDecrease);
-  }
-
   private void initContainersToIncrease() {
     if (this.containersToIncrease != null) {
       return;
     }
-    ChangeContainersResourceRequestProtoOrBuilder p =
+    IncreaseContainersResourceRequestProtoOrBuilder p =
             viaProto ? proto : builder;
     List<TokenProto> list = p.getIncreaseContainersList();
     this.containersToIncrease = new ArrayList<Token>();
@@ -190,69 +166,11 @@ public class ChangeContainersResourceRequestPBImpl extends
     builder.addAllIncreaseContainers(iterable);
   }
 
-  private void initContainersToDecrease() {
-    if (this.containersToDecrease != null) {
-      return;
-    }
-    ChangeContainersResourceRequestProtoOrBuilder p =
-            viaProto ? proto : builder;
-    List<ContainerResourceDecreaseProto> list = p.getDecreaseContainersList();
-    this.containersToDecrease = new ArrayList<ContainerResourceDecrease>();
-
-    for (ContainerResourceDecreaseProto c : list) {
-      this.containersToDecrease.add(convertFromProtoFormat(c));
-    }
-  }
-
-  private void addDecreaseContainersToProto() {
-    maybeInitBuilder();
-    builder.clearDecreaseContainers();
-    if (this.containersToDecrease == null) {
-      return;
-    }
-    Iterable<ContainerResourceDecreaseProto> iterable = new
-            Iterable<ContainerResourceDecreaseProto>() {
-        @Override
-        public Iterator<ContainerResourceDecreaseProto> iterator() {
-          return new Iterator<ContainerResourceDecreaseProto>() {
-            Iterator<ContainerResourceDecrease> iter = containersToDecrease
-                    .iterator();
-
-            @Override
-            public boolean hasNext() {
-              return iter.hasNext();
-            }
-
-            @Override
-            public ContainerResourceDecreaseProto next() {
-              return convertToProtoFormat(iter.next());
-            }
-
-            @Override
-            public void remove() {
-              throw new UnsupportedOperationException();
-            }
-          };
-        }
-      };
-    builder.addAllDecreaseContainers(iterable);
-  }
-
   private Token convertFromProtoFormat(TokenProto p) {
     return new TokenPBImpl(p);
   }
 
   private TokenProto convertToProtoFormat(Token t) {
     return ((TokenPBImpl) t).getProto();
-  }
-
-  private ContainerResourceDecrease convertFromProtoFormat(
-          ContainerResourceDecreaseProto p) {
-    return new ContainerResourceDecreasePBImpl(p);
-  }
-
-  private ContainerResourceDecreaseProto convertToProtoFormat(
-          ContainerResourceDecrease t) {
-    return ((ContainerResourceDecreasePBImpl) t).getProto();
   }
 }

@@ -190,25 +190,25 @@ public class TestContainerManagerWithLCE extends TestContainerManager {
   }
 
   @Override
-  public void testChangeContainerResourceWithInvalidRequests() throws Exception {
+  public void testIncreaseContainerResourceWithInvalidRequests() throws Exception {
     // Don't run the test if the binary is not available.
     if (!shouldRunTest()) {
       LOG.info("LCE binary path is not passed. Not running the test");
       return;
     }
-    LOG.info("Running testChangeContainerResourceWithInvalidRequests");
-    super.testChangeContainerResourceWithInvalidRequests();
+    LOG.info("Running testIncreaseContainerResourceWithInvalidRequests");
+    super.testIncreaseContainerResourceWithInvalidRequests();
   }
 
   @Override
-  public void testChangeContainerResourceWithInvalidResource() throws Exception {
+  public void testIncreaseContainerResourceWithInvalidResource() throws Exception {
     // Don't run the test if the binary is not available.
     if (!shouldRunTest()) {
       LOG.info("LCE binary path is not passed. Not running the test");
       return;
     }
-    LOG.info("Running testChangeContainerResourceWithInvalidResource");
-    super.testChangeContainerResourceWithInvalidResource();
+    LOG.info("Running testIncreaseContainerResourceWithInvalidResource");
+    super.testIncreaseContainerResourceWithInvalidResource();
   }
 
   private boolean shouldRunTest() {

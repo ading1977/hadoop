@@ -16,33 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.yarn.server.nodemanager.containermanager.monitor;
+package org.apache.hadoop.yarn.server.nodemanager.containermanager.container;
 
 import org.apache.hadoop.yarn.api.records.ContainerId;
+import org.apache.hadoop.yarn.api.records.Resource;
 
-public class ContainerChangeMonitoringEvent extends ContainersMonitorEvent {
-  private final long vmemLimit;
-  private final long pmemLimit;
-  private final int cpuVcores;
+public class ChangeContainerResourceEvent extends ContainerEvent {
 
-  public ContainerChangeMonitoringEvent(ContainerId containerId,
-                                        long vmemLimit, long pmemLimit,
-                                        int cpuVcores) {
-    super(containerId, ContainersMonitorEventType.CHANGE_MONITORING_CONTAINER);
-    this.vmemLimit = vmemLimit;
-    this.pmemLimit = pmemLimit;
-    this.cpuVcores = cpuVcores;
+  private Resource resource;
+
+  public ChangeContainerResourceEvent(ContainerId c, Resource resource) {
+    super(c, ContainerEventType.CHANGE_CONTAINER_RESOURCE);
+    this.resource = resource;
   }
 
-  public long getVmemLimit() {
-    return this.vmemLimit;
-  }
-
-  public long getPmemLimit() {
-    return this.pmemLimit;
-  }
-
-  public int getCpuVcores() {
-    return this.cpuVcores;
+  public Resource getResource() {
+    return this.resource;
   }
 }

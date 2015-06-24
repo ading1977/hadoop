@@ -58,8 +58,8 @@ import org.apache.hadoop.service.Service;
 import org.apache.hadoop.service.ServiceStateChangeListener;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.api.ContainerManagementProtocol;
-import org.apache.hadoop.yarn.api.protocolrecords.ChangeContainersResourceRequest;
-import org.apache.hadoop.yarn.api.protocolrecords.ChangeContainersResourceResponse;
+import org.apache.hadoop.yarn.api.protocolrecords.IncreaseContainersResourceRequest;
+import org.apache.hadoop.yarn.api.protocolrecords.IncreaseContainersResourceResponse;
 import org.apache.hadoop.yarn.api.protocolrecords.GetContainerStatusesRequest;
 import org.apache.hadoop.yarn.api.protocolrecords.GetContainerStatusesResponse;
 import org.apache.hadoop.yarn.api.protocolrecords.StartContainerRequest;
@@ -72,7 +72,6 @@ import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ContainerExitStatus;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
-import org.apache.hadoop.yarn.api.records.ContainerResourceDecrease;
 import org.apache.hadoop.yarn.api.records.ContainerState;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
 import org.apache.hadoop.yarn.api.records.LogAggregationContext;
@@ -115,11 +114,10 @@ import org.apache.hadoop.yarn.server.nodemanager.containermanager.application.Ap
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.application.ApplicationImpl;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.application.ApplicationInitEvent;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.Container;
-import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.ContainerChangeEvent;
+import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.ChangeContainerResourceEvent;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.ContainerEvent;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.ContainerEventType;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.ContainerImpl;
-import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.ContainerInitEvent;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.container.ContainerKillEvent;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.launcher.ContainersLauncher;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.launcher.ContainersLauncherEventType;
@@ -1016,28 +1014,23 @@ public class ContainerManagerImpl extends CompositeService implements
   }
 
   /**
-   * Change resource of a list of containers on this NodeManager.
+   * Increase resource of a list of containers on this NodeManager.
    */
   @Override
-  public ChangeContainersResourceResponse
-      changeContainersResource(ChangeContainersResourceRequest requests) throws YarnException,
+  public IncreaseContainersResourceResponse
+  increaseContainersResource(IncreaseContainersResourceRequest requests) throws YarnException,
           IOException {
     if (blockNewContainerRequests.get()) {
       throw new NMNotYetReadyException(
-              "Rejecting container resource change as NodeManager has not"
+              "Rejecting container resource increase as NodeManager has not"
                       + " yet connected with ResourceManager");
     }
     UserGroupInformation remoteUgi = getRemoteUgi();
     NMTokenIdentifier nmTokenIdentifier = selectNMTokenIdentifier(remoteUgi);
     authorizeUser(remoteUgi, nmTokenIdentifier);
-    List<ContainerId> successfullyChangedContainers = new ArrayList<ContainerId>();
+    List<ContainerId> successfullyIncreasedContainers = new ArrayList<ContainerId>();
     Map<ContainerId, SerializedException> failedContainers =
             new HashMap<ContainerId, SerializedException>();
-    List<ContainerId> containerIdsToDecrease = new ArrayList<>();
-    for (ContainerResourceDecrease containerResourceDecrease : requests.getContainersToDecrease()) {
-      containerIdsToDecrease.add(containerResourceDecrease.getContainerId());
-    }
-    List<ContainerId> conflictingContainerIds = new ArrayList<>();
     // Process container resource increase requests
     for (org.apache.hadoop.yarn.api.records.Token token : requests.getContainersToIncrease()) {
       ContainerId containerId = null;
@@ -1051,48 +1044,25 @@ public class ContainerManagerImpl extends CompositeService implements
                 containerTokenIdentifier);
         authorizeResourceIncreaseRequest(nmTokenIdentifier, containerTokenIdentifier);
         containerId = containerTokenIdentifier.getContainerID();
-        if (containerIdsToDecrease.contains(containerId)) {
-          conflictingContainerIds.add(containerId);
-          throw RPCUtil.getRemoteException("Both resource increase and "
-                  + "decrease have been specified in the same request for "
-                  + "container " + containerId.toString());
-        }
         // Reuse the startContainer logic to update NMToken, as container resource increase
         // request will have come with an updated NMToken.
         updateNMTokenIdentifier(nmTokenIdentifier);
         Resource resource = containerTokenIdentifier.getResource();
-        changeContainerResourceInternal(containerId, resource, true);
-        successfullyChangedContainers.add(containerId);
+        increaseContainerResourceInternal(containerId, resource);
+        successfullyIncreasedContainers.add(containerId);
       } catch (YarnException | InvalidToken e) {
         failedContainers.put(containerId, SerializedException.newInstance(e));
       } catch (IOException e) {
         throw RPCUtil.getRemoteException(e);
       }
     }
-    // Process container resource decrease requests
-    for (ContainerResourceDecrease containerResourceDecrease : requests.getContainersToDecrease()) {
-      ContainerId containerId = null;
-      try {
-        containerId = containerResourceDecrease.getContainerId();
-        Resource resource = containerResourceDecrease.getCapability();
-        if (conflictingContainerIds.contains(containerId)) {
-          // Skip the conflicting container Ids.
-          continue;
-        }
-        authorizeResourceDecreaseRequest(nmTokenIdentifier, containerId);
-        changeContainerResourceInternal(containerId, resource, false);
-        successfullyChangedContainers.add(containerResourceDecrease.getContainerId());
-      } catch (YarnException e) {
-        failedContainers.put(containerId, SerializedException.newInstance(e));
-      }
-    }
-    return ChangeContainersResourceResponse.newInstance(successfullyChangedContainers,
-        failedContainers);
+    return IncreaseContainersResourceResponse.newInstance(successfullyIncreasedContainers,
+            failedContainers);
   }
 
   @SuppressWarnings("unchecked")
-  private synchronized void changeContainerResourceInternal(ContainerId containerId,
-      Resource targetResource, boolean increase) throws YarnException {
+  private synchronized void increaseContainerResourceInternal(ContainerId containerId,
+                            Resource targetResource) throws YarnException {
     Container container = context.getContainers().get(containerId);
     // Check container existence
     if (container == null) {
@@ -1112,36 +1082,30 @@ public class ContainerManagerImpl extends CompositeService implements
             nodemanager.containermanager.container.ContainerState.RUNNING) {
       throw RPCUtil.getRemoteException("Container " + containerId.toString()
               + " is in " + currentState.name() + " state."
-              + " Resource can only be changed when a container is in RUNNING state");
+              + " Resource can only be increased when a container is in RUNNING state");
     }
     // Check validity of the target resource.
-    // We trust the target resource for resource increase request because it is extracted
-    // from the authorized container token. If this token is being used in consecutive calls
-    // to increase resource, the latter calls will be rejected because the container's
-    // resource usage will have been increased by then.
     Resource currentResource = container.getResource();
     if (currentResource.equals(targetResource)) {
-      throw RPCUtil.getRemoteException("The target resource "
+      LOG.warn("The target resource "
               + targetResource.toString()
               + " is the same as the current resource");
+      return;
     }
-    if (!increase) {
-      if (!Resources.fitsIn(Resources.none(), targetResource)
-             || !Resources.fitsIn(targetResource, currentResource)) {
-        throw RPCUtil.getRemoteException("The target resource "
-                + targetResource.toString()
-                + " is not smaller than the current resource "
-                + currentResource.toString());
-      }
+    if (!Resources.fitsIn(currentResource, targetResource)) {
+      throw RPCUtil.getRemoteException("The current resource "
+              + currentResource.toString()
+              + " is smaller than the target resource "
+              + targetResource.toString());
     }
     this.readLock.lock();
     try {
       if (!serviceStopped) {
-        dispatcher.getEventHandler().handle(new ContainerChangeEvent(
+        dispatcher.getEventHandler().handle(new ChangeContainerResourceEvent(
                 containerId, targetResource));
       } else {
         throw new YarnException(
-                "Failed to change container resource as the NodeManager is " +
+                "Failed to increase container resource as the NodeManager is " +
                         "in the process of shutting down");
       }
     } finally {

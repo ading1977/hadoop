@@ -456,6 +456,7 @@ message ContainerStatusProto {
   optional ContainerStateProto state = 2;
   optional string diagnostics = 3 [default = "N/A"];
   optional int32 exit_status = 4 [default = -1000];
+  optional ResourceProto capability = 5;
 }
 
 enum ContainerExitStatusProto {
@@ -470,13 +471,13 @@ message ContainerResourceIncreaseRequestProto {
   optional ResourceProto capability = 2;
 } 
 
-message ContainerResourceIncreaseProto {
+message IncreasedContainerProto {
   optional ContainerIdProto container_id = 1;
   optional ResourceProto capability = 2;
   optional hadoop.common.TokenProto container_token = 3;
 }
 
-message ContainerResourceDecreaseProto {
+message DecreasedContainerProto {
   optional ContainerIdProto container_id = 1;
   optional ResourceProto capability = 2;
 }

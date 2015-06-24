@@ -20,34 +20,34 @@ package org.apache.hadoop.yarn.api.records.impl.pb;
 
 import org.apache.hadoop.security.proto.SecurityProtos.TokenProto;
 import org.apache.hadoop.yarn.api.records.ContainerId;
-import org.apache.hadoop.yarn.api.records.ContainerResourceIncrease;
+import org.apache.hadoop.yarn.api.records.IncreasedContainer;
 import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.hadoop.yarn.api.records.Token;
 import org.apache.hadoop.yarn.proto.YarnProtos.ContainerIdProto;
-import org.apache.hadoop.yarn.proto.YarnProtos.ContainerResourceIncreaseProto;
-import org.apache.hadoop.yarn.proto.YarnProtos.ContainerResourceIncreaseProtoOrBuilder;
+import org.apache.hadoop.yarn.proto.YarnProtos.IncreasedContainerProto;
+import org.apache.hadoop.yarn.proto.YarnProtos.IncreasedContainerProtoOrBuilder;
 import org.apache.hadoop.yarn.proto.YarnProtos.ResourceProto;
 
-public class ContainerResourceIncreasePBImpl extends ContainerResourceIncrease {
-  ContainerResourceIncreaseProto proto = ContainerResourceIncreaseProto
+public class IncreasedContainerPBImpl extends IncreasedContainer {
+  IncreasedContainerProto proto = IncreasedContainerProto
       .getDefaultInstance();
-  ContainerResourceIncreaseProto.Builder builder = null;
+  IncreasedContainerProto.Builder builder = null;
   boolean viaProto = false;
 
   private ContainerId existingContainerId = null;
   private Resource targetCapability = null;
   private Token token = null;
 
-  public ContainerResourceIncreasePBImpl() {
-    builder = ContainerResourceIncreaseProto.newBuilder();
+  public IncreasedContainerPBImpl() {
+    builder = IncreasedContainerProto.newBuilder();
   }
 
-  public ContainerResourceIncreasePBImpl(ContainerResourceIncreaseProto proto) {
+  public IncreasedContainerPBImpl(IncreasedContainerProto proto) {
     this.proto = proto;
     viaProto = true;
   }
 
-  public ContainerResourceIncreaseProto getProto() {
+  public IncreasedContainerProto getProto() {
     mergeLocalToProto();
     proto = viaProto ? proto : builder.build();
     viaProto = true;
@@ -56,7 +56,7 @@ public class ContainerResourceIncreasePBImpl extends ContainerResourceIncrease {
 
   @Override
   public ContainerId getContainerId() {
-    ContainerResourceIncreaseProtoOrBuilder p = viaProto ? proto : builder;
+    IncreasedContainerProtoOrBuilder p = viaProto ? proto : builder;
     if (this.existingContainerId != null) {
       return this.existingContainerId;
     }
@@ -77,7 +77,7 @@ public class ContainerResourceIncreasePBImpl extends ContainerResourceIncrease {
 
   @Override
   public Resource getCapability() {
-    ContainerResourceIncreaseProtoOrBuilder p = viaProto ? proto : builder;
+    IncreasedContainerProtoOrBuilder p = viaProto ? proto : builder;
     if (this.targetCapability != null) {
       return this.targetCapability;
     }
@@ -98,7 +98,7 @@ public class ContainerResourceIncreasePBImpl extends ContainerResourceIncrease {
   
   @Override
   public Token getContainerToken() {
-    ContainerResourceIncreaseProtoOrBuilder p = viaProto ? proto : builder;
+    IncreasedContainerProtoOrBuilder p = viaProto ? proto : builder;
     if (this.token != null) {
       return this.token;
     }
@@ -152,7 +152,7 @@ public class ContainerResourceIncreasePBImpl extends ContainerResourceIncrease {
 
   private void maybeInitBuilder() {
     if (viaProto || builder == null) {
-      builder = ContainerResourceIncreaseProto.newBuilder(proto);
+      builder = IncreasedContainerProto.newBuilder(proto);
     }
     viaProto = false;
   }

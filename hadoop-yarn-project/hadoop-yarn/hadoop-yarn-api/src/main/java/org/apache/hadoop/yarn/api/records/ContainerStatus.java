@@ -114,4 +114,12 @@ public abstract class ContainerStatus {
   @Private
   @Unstable
   public abstract void setDiagnostics(String diagnostics);
+
+  @Public
+  @Stable
+  public abstract Resource getCapability();
+
+  @Private
+  @Unstable
+  public abstract void setCapability(Resource capability);
 }

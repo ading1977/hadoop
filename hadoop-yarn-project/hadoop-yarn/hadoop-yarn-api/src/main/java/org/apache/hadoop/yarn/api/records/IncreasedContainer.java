@@ -24,12 +24,12 @@ import org.apache.hadoop.yarn.util.Records;
 /**
  * Represent a new increased container accepted by Resource Manager
  */
-public abstract class ContainerResourceIncrease {
+public abstract class IncreasedContainer {
   @Public
-  public static ContainerResourceIncrease newInstance(
+  public static IncreasedContainer newInstance(
       ContainerId existingContainerId, Resource targetCapability, Token token) {
-    ContainerResourceIncrease context = Records
-        .newRecord(ContainerResourceIncrease.class);
+    IncreasedContainer context = Records
+        .newRecord(IncreasedContainer.class);
     context.setContainerId(existingContainerId);
     context.setCapability(targetCapability);
     context.setContainerToken(token);
@@ -61,8 +61,8 @@ public abstract class ContainerResourceIncrease {
   
   @Override
   public boolean equals(Object other) {
-    if (other instanceof ContainerResourceIncrease) {
-      ContainerResourceIncrease ctx = (ContainerResourceIncrease)other;
+    if (other instanceof IncreasedContainer) {
+      IncreasedContainer ctx = (IncreasedContainer)other;
       
       if (getContainerId() == null && ctx.getContainerId() != null) {
         return false;

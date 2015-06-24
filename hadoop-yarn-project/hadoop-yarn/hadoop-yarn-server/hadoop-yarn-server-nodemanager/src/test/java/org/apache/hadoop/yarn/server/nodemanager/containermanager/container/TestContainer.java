@@ -928,7 +928,7 @@ public class TestContainer {
     }
 
     public void changeContainer(Resource resource) {
-      c.handle(new ContainerChangeEvent(cId, resource));
+      c.handle(new ChangeContainerResourceEvent(cId, resource));
       drainDispatcherEvents();
     }
 

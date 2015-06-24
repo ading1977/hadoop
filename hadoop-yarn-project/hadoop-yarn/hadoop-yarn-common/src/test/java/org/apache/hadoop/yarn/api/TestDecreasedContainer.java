@@ -18,56 +18,48 @@
 
 package org.apache.hadoop.yarn.api;
 
-import java.util.Arrays;
-
+import org.apache.hadoop.yarn.api.records.DecreasedContainer;
+import org.apache.hadoop.yarn.api.records.impl.pb.DecreasedContainerPBImpl;
 import org.junit.Assert;
 
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ContainerId;
-import org.apache.hadoop.yarn.api.records.ContainerResourceIncrease;
 import org.apache.hadoop.yarn.api.records.Resource;
-import org.apache.hadoop.yarn.api.records.Token;
-import org.apache.hadoop.yarn.api.records.impl.pb.ContainerResourceIncreasePBImpl;
-import org.apache.hadoop.yarn.proto.YarnProtos.ContainerResourceIncreaseProto;
+import org.apache.hadoop.yarn.proto.YarnProtos.DecreasedContainerProto;
 import org.junit.Test;
 
-public class TestContainerResourceIncrease {
+public class TestDecreasedContainer {
   @Test
-  public void testResourceIncreaseContext() {
-    byte[] identifier = new byte[] { 1, 2, 3, 4 };
-    Token token = Token.newInstance(identifier, "", "".getBytes(), "");
+  public void testResourceDecreaseContext() {
     ContainerId containerId = ContainerId
         .newContainerId(ApplicationAttemptId.newInstance(
             ApplicationId.newInstance(1234, 3), 3), 7);
     Resource resource = Resource.newInstance(1023, 3);
-    ContainerResourceIncrease ctx = ContainerResourceIncrease.newInstance(
-        containerId, resource, token);
+    DecreasedContainer ctx = DecreasedContainer.newInstance(
+            containerId, resource);
 
     // get proto and recover to ctx
-    ContainerResourceIncreaseProto proto = 
-        ((ContainerResourceIncreasePBImpl) ctx).getProto();
-    ctx = new ContainerResourceIncreasePBImpl(proto);
+    DecreasedContainerProto proto =
+        ((DecreasedContainerPBImpl) ctx).getProto();
+    ctx = new DecreasedContainerPBImpl(proto);
 
     // check values
     Assert.assertEquals(ctx.getCapability(), resource);
     Assert.assertEquals(ctx.getContainerId(), containerId);
-    Assert.assertTrue(Arrays.equals(ctx.getContainerToken().getIdentifier()
-        .array(), identifier));
   }
   
   @Test
-  public void testResourceIncreaseContextWithNull() {
-    ContainerResourceIncrease ctx = ContainerResourceIncrease.newInstance(null,
-        null, null);
+  public void testResourceDecreaseContextWithNull() {
+    DecreasedContainer ctx = DecreasedContainer.newInstance(null,
+            null);
     
     // get proto and recover to ctx;
-    ContainerResourceIncreaseProto proto = 
-        ((ContainerResourceIncreasePBImpl) ctx).getProto();
-    ctx = new ContainerResourceIncreasePBImpl(proto);
+    DecreasedContainerProto proto =
+        ((DecreasedContainerPBImpl) ctx).getProto();
+    ctx = new DecreasedContainerPBImpl(proto);
 
     // check values
-    Assert.assertNull(ctx.getContainerToken());
     Assert.assertNull(ctx.getCapability());
     Assert.assertNull(ctx.getContainerId());
   }

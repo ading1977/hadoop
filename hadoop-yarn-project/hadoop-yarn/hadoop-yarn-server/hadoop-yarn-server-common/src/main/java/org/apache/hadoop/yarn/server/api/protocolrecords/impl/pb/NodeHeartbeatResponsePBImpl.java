@@ -27,12 +27,15 @@ import java.util.Map;
 
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ContainerId;
+import org.apache.hadoop.yarn.api.records.DecreasedContainer;
 import org.apache.hadoop.yarn.api.records.impl.pb.ApplicationIdPBImpl;
 import org.apache.hadoop.yarn.api.records.impl.pb.ContainerIdPBImpl;
+import org.apache.hadoop.yarn.api.records.impl.pb.DecreasedContainerPBImpl;
 import org.apache.hadoop.yarn.api.records.impl.pb.ProtoBase;
 import org.apache.hadoop.yarn.api.records.impl.pb.ProtoUtils;
 import org.apache.hadoop.yarn.proto.YarnProtos.ApplicationIdProto;
 import org.apache.hadoop.yarn.proto.YarnProtos.ContainerIdProto;
+import org.apache.hadoop.yarn.proto.YarnProtos.DecreasedContainerProto;
 import org.apache.hadoop.yarn.proto.YarnServerCommonProtos.MasterKeyProto;
 import org.apache.hadoop.yarn.proto.YarnServerCommonProtos.NodeActionProto;
 import org.apache.hadoop.yarn.proto.YarnServerCommonServiceProtos.NodeHeartbeatResponseProto;
@@ -58,7 +61,9 @@ public class NodeHeartbeatResponsePBImpl extends
 
   private MasterKey containerTokenMasterKey = null;
   private MasterKey nmTokenMasterKey = null;
-  
+
+  private List<DecreasedContainer> containersToDecrease = null;
+
   public NodeHeartbeatResponsePBImpl() {
     builder = NodeHeartbeatResponseProto.newBuilder();
   }
@@ -95,6 +100,9 @@ public class NodeHeartbeatResponsePBImpl extends
     }
     if (this.systemCredentials != null) {
       addSystemCredentialsToProto();
+    }
+    if (this.containersToDecrease != null) {
+      addContainersToDecreaseToProto();
     }
   }
 
@@ -408,6 +416,63 @@ public class NodeHeartbeatResponsePBImpl extends
     builder.addAllApplicationsToCleanup(iterable);
   }
 
+  private void initContainersToDecrease() {
+    if (this.containersToDecrease != null) {
+      return;
+    }
+    NodeHeartbeatResponseProtoOrBuilder p = viaProto ? proto : builder;
+    List<DecreasedContainerProto> list = p.getContainersToDecreaseList();
+    this.containersToDecrease = new ArrayList<DecreasedContainer>();
+
+    for (DecreasedContainerProto c : list) {
+      this.containersToDecrease.add(convertFromProtoFormat(c));
+    }
+  }
+
+  @Override
+  public List<DecreasedContainer> getContainersToDecrease() {
+    initContainersToDecrease();
+    return this.containersToDecrease;
+  }
+
+  @Override
+  public void addAllContainersToDecrease(
+      final List<DecreasedContainer> containersToDecrease) {
+    if (containersToDecrease == null) {
+      return;
+    }
+    this.containersToDecrease.addAll(containersToDecrease);
+  }
+
+  private void addContainersToDecreaseToProto() {
+    maybeInitBuilder();
+    builder.clearContainersToDecrease();
+    if (this.containersToDecrease == null) {
+      return ;
+    }
+    Iterable<DecreasedContainerProto> iterable = new
+            Iterable<DecreasedContainerProto>() {
+      @Override
+      public Iterator<DecreasedContainerProto> iterator() {
+        return new Iterator<DecreasedContainerProto>() {
+          Iterator<DecreasedContainer> iter = containersToDecrease.iterator();
+          @Override
+          public boolean hasNext() {
+            return iter.hasNext();
+          }
+          @Override
+          public DecreasedContainerProto next() {
+            return convertToProtoFormat(iter.next());
+          }
+          @Override
+          public void remove() {
+            throw new UnsupportedOperationException();
+          }
+        };
+      }
+    };
+    builder.addAllContainersToDecrease(iterable);
+  }
 
   @Override
   public Map<ApplicationId, ByteBuffer> getSystemCredentialsForApps() {
@@ -482,6 +547,14 @@ public class NodeHeartbeatResponsePBImpl extends
 
   private MasterKeyProto convertToProtoFormat(MasterKey t) {
     return ((MasterKeyPBImpl) t).getProto();
+  }
+
+  private DecreasedContainerPBImpl convertFromProtoFormat(DecreasedContainerProto p) {
+    return new DecreasedContainerPBImpl(p);
+  }
+
+  private DecreasedContainerProto convertToProtoFormat(DecreasedContainer t) {
+    return ((DecreasedContainerPBImpl) t).getProto();
   }
 
   @Override

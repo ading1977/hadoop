@@ -28,8 +28,8 @@ import org.apache.hadoop.classification.InterfaceStability.Unstable;
 import org.apache.hadoop.yarn.api.ApplicationMasterProtocol;
 import org.apache.hadoop.yarn.api.records.AMCommand;
 import org.apache.hadoop.yarn.api.records.Container;
-import org.apache.hadoop.yarn.api.records.ContainerResourceDecrease;
-import org.apache.hadoop.yarn.api.records.ContainerResourceIncrease;
+import org.apache.hadoop.yarn.api.records.DecreasedContainer;
+import org.apache.hadoop.yarn.api.records.IncreasedContainer;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
 import org.apache.hadoop.yarn.api.records.NMToken;
 import org.apache.hadoop.yarn.api.records.NodeReport;
@@ -94,8 +94,8 @@ public abstract class AllocateResponse {
       List<Container> allocatedContainers, List<NodeReport> updatedNodes,
       Resource availResources, AMCommand command, int numClusterNodes,
       PreemptionMessage preempt, List<NMToken> nmTokens,
-      List<ContainerResourceIncrease> increasedContainers,
-      List<ContainerResourceDecrease> decreasedContainers) {
+      List<IncreasedContainer> increasedContainers,
+      List<DecreasedContainer> decreasedContainers) {
     AllocateResponse response = newInstance(responseId, completedContainers,
         allocatedContainers, updatedNodes, availResources, command,
         numClusterNodes, preempt, nmTokens);
@@ -111,8 +111,8 @@ public abstract class AllocateResponse {
       List<Container> allocatedContainers, List<NodeReport> updatedNodes,
       Resource availResources, AMCommand command, int numClusterNodes,
       PreemptionMessage preempt, List<NMToken> nmTokens, Token amRMToken,
-      List<ContainerResourceIncrease> increasedContainers,
-      List<ContainerResourceDecrease> decreasedContainers) {
+      List<IncreasedContainer> increasedContainers,
+      List<DecreasedContainer> decreasedContainers) {
     AllocateResponse response =
         newInstance(responseId, completedContainers, allocatedContainers,
           updatedNodes, availResources, command, numClusterNodes, preempt,
@@ -267,7 +267,7 @@ public abstract class AllocateResponse {
    */
   @Public
   @Stable
-  public abstract List<ContainerResourceIncrease> getIncreasedContainers();
+  public abstract List<IncreasedContainer> getIncreasedContainers();
 
   /**
    * Set the list of newly increased containers by <code>ResourceManager</code>
@@ -275,14 +275,14 @@ public abstract class AllocateResponse {
   @Private
   @Unstable
   public abstract void setIncreasedContainers(
-      List<ContainerResourceIncrease> increasedContainers);
+      List<IncreasedContainer> increasedContainers);
 
   /**
    * Get the list of newly decreased containers by <code>NodeManager</code>
    */
   @Public
   @Stable
-  public abstract List<ContainerResourceDecrease> getDecreasedContainers();
+  public abstract List<DecreasedContainer> getDecreasedContainers();
 
   /**
    * Set the list of newly decreased containers by <code>NodeManager</code>
@@ -290,7 +290,7 @@ public abstract class AllocateResponse {
   @Private
   @Unstable
   public abstract void setDecreasedContainers(
-      List<ContainerResourceDecrease> decreasedContainers);
+      List<DecreasedContainer> decreasedContainers);
 
   /**
    * The AMRMToken that belong to this attempt

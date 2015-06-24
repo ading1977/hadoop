@@ -26,7 +26,7 @@ import java.util.Map;
 
 import org.apache.hadoop.classification.InterfaceAudience.Private;
 import org.apache.hadoop.classification.InterfaceStability.Unstable;
-import org.apache.hadoop.yarn.api.protocolrecords.ChangeContainersResourceResponse;
+import org.apache.hadoop.yarn.api.protocolrecords.IncreaseContainersResourceResponse;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.SerializedException;
 import org.apache.hadoop.yarn.api.records.impl.pb.ContainerIdPBImpl;
@@ -34,33 +34,33 @@ import org.apache.hadoop.yarn.api.records.impl.pb.SerializedExceptionPBImpl;
 import org.apache.hadoop.yarn.proto.YarnProtos.ContainerIdProto;
 import org.apache.hadoop.yarn.proto.YarnProtos.SerializedExceptionProto;
 import org.apache.hadoop.yarn.proto.YarnServiceProtos.ContainerExceptionMapProto;
-import org.apache.hadoop.yarn.proto.YarnServiceProtos.ChangeContainersResourceResponseProto;
-import org.apache.hadoop.yarn.proto.YarnServiceProtos.ChangeContainersResourceResponseProtoOrBuilder;
+import org.apache.hadoop.yarn.proto.YarnServiceProtos.IncreaseContainersResourceResponseProto;
+import org.apache.hadoop.yarn.proto.YarnServiceProtos.IncreaseContainersResourceResponseProtoOrBuilder;
 
 import com.google.protobuf.TextFormat;
 
 @Private
 @Unstable
-public class ChangeContainersResourceResponsePBImpl extends
-        ChangeContainersResourceResponse {
-  ChangeContainersResourceResponseProto proto =
-          ChangeContainersResourceResponseProto.getDefaultInstance();
-  ChangeContainersResourceResponseProto.Builder builder = null;
+public class IncreaseContainersResourceResponsePBImpl extends
+        IncreaseContainersResourceResponse {
+  IncreaseContainersResourceResponseProto proto =
+          IncreaseContainersResourceResponseProto.getDefaultInstance();
+  IncreaseContainersResourceResponseProto.Builder builder = null;
   boolean viaProto = false;
   private List<ContainerId> succeededRequests = null;
   private Map<ContainerId, SerializedException> failedRequests = null;
 
-  public ChangeContainersResourceResponsePBImpl() {
-    builder = ChangeContainersResourceResponseProto.newBuilder();
+  public IncreaseContainersResourceResponsePBImpl() {
+    builder = IncreaseContainersResourceResponseProto.newBuilder();
   }
 
-  public ChangeContainersResourceResponsePBImpl(
-          ChangeContainersResourceResponseProto proto) {
+  public IncreaseContainersResourceResponsePBImpl(
+          IncreaseContainersResourceResponseProto proto) {
     this.proto = proto;
     viaProto = true;
   }
 
-  public ChangeContainersResourceResponseProto getProto() {
+  public IncreaseContainersResourceResponseProto getProto() {
     mergeLocalToProto();
     proto = viaProto ? proto : builder.build();
     viaProto = true;
@@ -108,19 +108,19 @@ public class ChangeContainersResourceResponsePBImpl extends
 
   private void maybeInitBuilder() {
     if (viaProto || builder == null) {
-      builder = ChangeContainersResourceResponseProto.newBuilder(proto);
+      builder = IncreaseContainersResourceResponseProto.newBuilder(proto);
     }
     viaProto = false;
   }
 
   @Override
-  public List<ContainerId> getSuccessfullyChangedContainers() {
+  public List<ContainerId> getSuccessfullyIncreasedContainers() {
     initSucceededRequests();
     return this.succeededRequests;
   }
 
   @Override
-  public void setSuccessfullyChangedContainers(
+  public void setSuccessfullyIncreasedContainers(
           List<ContainerId> succeededRequests) {
     maybeInitBuilder();
     if (succeededRequests == null) {
@@ -133,7 +133,7 @@ public class ChangeContainersResourceResponsePBImpl extends
     if (this.succeededRequests != null) {
       return;
     }
-    ChangeContainersResourceResponseProtoOrBuilder p =
+    IncreaseContainersResourceResponseProtoOrBuilder p =
             viaProto ? proto : builder;
     List<ContainerIdProto> list = p.getSucceededRequestsList();
     this.succeededRequests = new ArrayList<ContainerId>();
@@ -194,7 +194,7 @@ public class ChangeContainersResourceResponsePBImpl extends
     if (this.failedRequests != null) {
       return;
     }
-    ChangeContainersResourceResponseProtoOrBuilder
+    IncreaseContainersResourceResponseProtoOrBuilder
             p = viaProto ? proto : builder;
     List<ContainerExceptionMapProto> protoList = p.getFailedRequestsList();
     this.failedRequests = new HashMap<ContainerId, SerializedException>();

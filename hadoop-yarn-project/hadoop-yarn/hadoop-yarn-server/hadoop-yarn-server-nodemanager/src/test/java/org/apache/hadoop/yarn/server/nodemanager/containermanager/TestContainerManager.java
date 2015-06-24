@@ -38,8 +38,8 @@ import org.apache.hadoop.fs.UnsupportedFileSystemException;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.service.Service;
 import org.apache.hadoop.util.Shell;
-import org.apache.hadoop.yarn.api.protocolrecords.ChangeContainersResourceRequest;
-import org.apache.hadoop.yarn.api.protocolrecords.ChangeContainersResourceResponse;
+import org.apache.hadoop.yarn.api.protocolrecords.IncreaseContainersResourceRequest;
+import org.apache.hadoop.yarn.api.protocolrecords.IncreaseContainersResourceResponse;
 import org.apache.hadoop.yarn.api.protocolrecords.GetContainerStatusesRequest;
 import org.apache.hadoop.yarn.api.protocolrecords.GetContainerStatusesResponse;
 import org.apache.hadoop.yarn.api.protocolrecords.StartContainerRequest;
@@ -55,7 +55,6 @@ import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ContainerExitStatus;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
-import org.apache.hadoop.yarn.api.records.ContainerResourceDecrease;
 import org.apache.hadoop.yarn.api.records.ContainerState;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
 import org.apache.hadoop.yarn.api.records.LocalResource;
@@ -883,7 +882,7 @@ public class TestContainerManager extends BaseContainerManagerTest {
   }
 
   @Test
-  public void testChangeContainerResourceWithInvalidRequests() throws Exception {
+  public void testIncreaseContainerResourceWithInvalidRequests() throws Exception {
     containerManager.start();
     // Start 4 containers 0..4 with default resource (1024, 1)
     List<StartContainerRequest> list = new ArrayList<>();
@@ -910,9 +909,8 @@ public class TestContainerManager extends BaseContainerManagerTest {
       i++;
     }
 
-    // Construct container resource change request,
+    // Construct container resource increase request,
     List<Token> increaseTokens = new ArrayList<Token>();
-    List<ContainerResourceDecrease> decreases = new ArrayList<>();
     // Add increase request for container-0, the request will fail as the
     // container's state in CM will not be RUNNING
     ContainerId cId0 = createContainerId(0);
@@ -922,20 +920,6 @@ public class TestContainerManager extends BaseContainerManagerTest {
                     Resource.newInstance(1234, 3),
                     context.getContainerTokenSecretManager(), null);
     increaseTokens.add(containerToken);
-    // Add both increase and decrease request for container-2, the request
-    // will fail as increase and decrease request cannot be applied to the
-    // same container in the same request
-    ContainerId cId2 = createContainerId(2);
-    containerToken =
-            createContainerToken(cId2, DUMMY_RM_IDENTIFIER,
-                    context.getNodeId(), user,
-                    Resource.newInstance(1234, 3),
-                    context.getContainerTokenSecretManager(), null);
-    increaseTokens.add(containerToken);
-    ContainerResourceDecrease decrease =
-            ContainerResourceDecrease.newInstance(cId2,
-                    Resource.newInstance(512, 3));
-    decreases.add(decrease);
     // Add increase request for container-7, the request will fail as the
     // container does not exist
     ContainerId cId7 = createContainerId(7);
@@ -946,32 +930,26 @@ public class TestContainerManager extends BaseContainerManagerTest {
                     context.getContainerTokenSecretManager(), null);
     increaseTokens.add(containerToken);
 
-    ChangeContainersResourceRequest changeRequest =
-            ChangeContainersResourceRequest
-              .newInstance(increaseTokens, decreases);
-    ChangeContainersResourceResponse changeResponse =
-            containerManager.changeContainersResource(changeRequest);
-
+    IncreaseContainersResourceRequest increaseRequest =
+            IncreaseContainersResourceRequest
+              .newInstance(increaseTokens);
+    IncreaseContainersResourceResponse increaseResponse =
+            containerManager.increaseContainersResource(increaseRequest);
     // Check response
     Assert.assertEquals(
-            0, changeResponse.getSuccessfullyChangedContainers().size());
-    Assert.assertEquals(3, changeResponse.getFailedRequests().size());
-    for (Map.Entry<ContainerId, SerializedException> entry : changeResponse
+            0, increaseResponse.getSuccessfullyIncreasedContainers().size());
+    Assert.assertEquals(2, increaseResponse.getFailedRequests().size());
+    for (Map.Entry<ContainerId, SerializedException> entry : increaseResponse
             .getFailedRequests().entrySet()) {
       Assert.assertNotNull("Failed message", entry.getValue().getMessage());
       if (cId0.equals(entry.getKey())) {
         Assert.assertTrue(entry.getValue().getMessage()
-          .contains("Resource can only be changed when a "
+          .contains("Resource can only be increased when a "
                   + "container is in RUNNING state"));
-      } else if (cId2.equals(entry.getKey())) {
-        Assert.assertTrue(entry.getValue().getMessage()
-          .contains("Both resource increase and "
-                  + "decrease have been specified in the same request for "
-                  + "container " + cId2.toString()));
       } else if (cId7.equals(entry.getKey())) {
         Assert.assertTrue(entry.getValue().getMessage()
                 .contains("Container " + cId7.toString()
-                  + " is not handled by this NodeManager"));
+                        + " is not handled by this NodeManager"));
       } else {
         throw new YarnException("Received failed request from wrong"
                 + " container: " + entry.getKey().toString());
@@ -980,7 +958,7 @@ public class TestContainerManager extends BaseContainerManagerTest {
   }
 
   @Test
-  public void testChangeContainerResourceWithInvalidResource() throws Exception {
+  public void testIncreaseContainerResourceWithInvalidResource() throws Exception {
     containerManager.start();
     File scriptFile = Shell.appendScriptExtension(tmpDir, "scriptFile");
     PrintWriter fileWriter = new PrintWriter(scriptFile);
@@ -1028,31 +1006,34 @@ public class TestContainerManager extends BaseContainerManagerTest {
     BaseContainerManagerTest.waitForNMContainerState(containerManager, cId,
             org.apache.hadoop.yarn.server.nodemanager.
                     containermanager.container.ContainerState.RUNNING);
-    // Send container resource decrease request
-    List<ContainerResourceDecrease> decreases = new ArrayList<>();
-    // The request will fail because the target resource does not fit in
-    // the current resource.
-    ContainerResourceDecrease decrease =
-            ContainerResourceDecrease.newInstance(cId,
-                    Resource.newInstance(2048, 3));
-    decreases.add(decrease);
-    ChangeContainersResourceRequest changeRequest =
-            ChangeContainersResourceRequest
-                    .newInstance(null, decreases);
-    ChangeContainersResourceResponse changeResponse =
-            containerManager.changeContainersResource(changeRequest);
+    // Construct container resource increase request,
+    List<Token> increaseTokens = new ArrayList<Token>();
+    // Add increase request. The increase request will fail
+    // as the current resource does not fit in the target resource
+    Token containerToken =
+            createContainerToken(cId, DUMMY_RM_IDENTIFIER,
+                    context.getNodeId(), user,
+                    Resource.newInstance(512, 1),
+                    context.getContainerTokenSecretManager(), null);
+    increaseTokens.add(containerToken);
+    IncreaseContainersResourceRequest increaseRequest =
+            IncreaseContainersResourceRequest
+                    .newInstance(increaseTokens);
+    IncreaseContainersResourceResponse increaseResponse =
+            containerManager.increaseContainersResource(increaseRequest);
     // Check response
     Assert.assertEquals(
-            0, changeResponse.getSuccessfullyChangedContainers().size());
-    Assert.assertEquals(1, changeResponse.getFailedRequests().size());
-    for (Map.Entry<ContainerId, SerializedException> entry : changeResponse
+            0, increaseResponse.getSuccessfullyIncreasedContainers().size());
+    Assert.assertEquals(1, increaseResponse.getFailedRequests().size());
+    for (Map.Entry<ContainerId, SerializedException> entry : increaseResponse
             .getFailedRequests().entrySet()) {
       if (cId.equals(entry.getKey())) {
         Assert.assertNotNull("Failed message", entry.getValue().getMessage());
         Assert.assertTrue(entry.getValue().getMessage()
-                .contains("The target resource "
-                        + Resource.newInstance(2048, 3).toString()
-                        + " is not smaller than the current resource"));
+                .contains("The current resource "
+                        + Resource.newInstance(1024, 1).toString()
+                        + " is smaller than the target resource "
+                        + Resource.newInstance(512, 1)));
       } else {
         throw new YarnException("Received failed request from wrong"
                 + " container: " + entry.getKey().toString());
@@ -1087,11 +1068,8 @@ public class TestContainerManager extends BaseContainerManagerTest {
         new ContainerTokenIdentifier(cId, nodeId.toString(), user, resource,
           System.currentTimeMillis() + 100000L, 123, rmIdentifier,
           Priority.newInstance(0), 0, logAggregationContext, null);
-    Token containerToken =
-        BuilderUtils
-          .newContainerToken(nodeId, containerTokenSecretManager
-            .retrievePassword(containerTokenIdentifier),
+    return BuilderUtils.newContainerToken(nodeId, containerTokenSecretManager
+                    .retrievePassword(containerTokenIdentifier),
             containerTokenIdentifier);
-    return containerToken;
   }
 }

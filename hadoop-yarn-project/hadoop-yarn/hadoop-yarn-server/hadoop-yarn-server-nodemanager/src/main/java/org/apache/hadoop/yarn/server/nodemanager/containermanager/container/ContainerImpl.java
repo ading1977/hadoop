@@ -65,7 +65,7 @@ import org.apache.hadoop.yarn.server.nodemanager.containermanager.localizer.even
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.localizer.sharedcache.SharedCacheUploadEvent;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.localizer.sharedcache.SharedCacheUploadEventType;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.loghandler.event.LogHandlerContainerFinishedEvent;
-import org.apache.hadoop.yarn.server.nodemanager.containermanager.monitor.ContainerChangeMonitoringEvent;
+import org.apache.hadoop.yarn.server.nodemanager.containermanager.monitor.ChangeMonitoringContainerResourceEvent;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.monitor.ContainerStartMonitoringEvent;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.monitor.ContainerStopMonitoringEvent;
 import org.apache.hadoop.yarn.server.nodemanager.metrics.NodeManagerMetrics;
@@ -179,19 +179,19 @@ public class ContainerImpl implements Container {
             ContainerState.DONE),
         ContainerEventType.INIT_CONTAINER, new RequestResourcesTransition())
     .addTransition(ContainerState.NEW, ContainerState.NEW,
-        ContainerEventType.UPDATE_DIAGNOSTICS_MSG,
-        UPDATE_DIAGNOSTICS_TRANSITION)
+            ContainerEventType.UPDATE_DIAGNOSTICS_MSG,
+            UPDATE_DIAGNOSTICS_TRANSITION)
     .addTransition(ContainerState.NEW, ContainerState.DONE,
         ContainerEventType.KILL_CONTAINER, new KillOnNewTransition())
 
     // From LOCALIZING State
     .addTransition(ContainerState.LOCALIZING,
-        EnumSet.of(ContainerState.LOCALIZING, ContainerState.LOCALIZED),
-        ContainerEventType.RESOURCE_LOCALIZED, new LocalizedTransition())
+            EnumSet.of(ContainerState.LOCALIZING, ContainerState.LOCALIZED),
+            ContainerEventType.RESOURCE_LOCALIZED, new LocalizedTransition())
     .addTransition(ContainerState.LOCALIZING,
-        ContainerState.LOCALIZATION_FAILED,
-        ContainerEventType.RESOURCE_FAILED,
-        new ResourceFailedTransition())
+            ContainerState.LOCALIZATION_FAILED,
+            ContainerEventType.RESOURCE_FAILED,
+            new ResourceFailedTransition())
     .addTransition(ContainerState.LOCALIZING, ContainerState.LOCALIZING,
         ContainerEventType.UPDATE_DIAGNOSTICS_MSG,
         UPDATE_DIAGNOSTICS_TRANSITION)
@@ -201,33 +201,33 @@ public class ContainerImpl implements Container {
 
     // From LOCALIZATION_FAILED State
     .addTransition(ContainerState.LOCALIZATION_FAILED,
-        ContainerState.DONE,
-        ContainerEventType.CONTAINER_RESOURCES_CLEANEDUP,
-        new LocalizationFailedToDoneTransition())
+            ContainerState.DONE,
+            ContainerEventType.CONTAINER_RESOURCES_CLEANEDUP,
+            new LocalizationFailedToDoneTransition())
     .addTransition(ContainerState.LOCALIZATION_FAILED,
-        ContainerState.LOCALIZATION_FAILED,
-        ContainerEventType.UPDATE_DIAGNOSTICS_MSG,
-        UPDATE_DIAGNOSTICS_TRANSITION)
+            ContainerState.LOCALIZATION_FAILED,
+            ContainerEventType.UPDATE_DIAGNOSTICS_MSG,
+            UPDATE_DIAGNOSTICS_TRANSITION)
     // container not launched so kill is a no-op
     .addTransition(ContainerState.LOCALIZATION_FAILED,
-        ContainerState.LOCALIZATION_FAILED,
-        ContainerEventType.KILL_CONTAINER)
+            ContainerState.LOCALIZATION_FAILED,
+            ContainerEventType.KILL_CONTAINER)
     // container cleanup triggers a release of all resources
     // regardless of whether they were localized or not
     // LocalizedResource handles release event in all states
     .addTransition(ContainerState.LOCALIZATION_FAILED,
-        ContainerState.LOCALIZATION_FAILED,
-        ContainerEventType.RESOURCE_LOCALIZED)
+            ContainerState.LOCALIZATION_FAILED,
+            ContainerEventType.RESOURCE_LOCALIZED)
     .addTransition(ContainerState.LOCALIZATION_FAILED,
-        ContainerState.LOCALIZATION_FAILED,
-        ContainerEventType.RESOURCE_FAILED)
+            ContainerState.LOCALIZATION_FAILED,
+            ContainerEventType.RESOURCE_FAILED)
 
     // From LOCALIZED State
     .addTransition(ContainerState.LOCALIZED, ContainerState.RUNNING,
-        ContainerEventType.CONTAINER_LAUNCHED, new LaunchTransition())
+            ContainerEventType.CONTAINER_LAUNCHED, new LaunchTransition())
     .addTransition(ContainerState.LOCALIZED, ContainerState.EXITED_WITH_FAILURE,
-        ContainerEventType.CONTAINER_EXITED_WITH_FAILURE,
-        new ExitedWithFailureTransition(true))
+            ContainerEventType.CONTAINER_EXITED_WITH_FAILURE,
+            new ExitedWithFailureTransition(true))
     .addTransition(ContainerState.LOCALIZED, ContainerState.LOCALIZED,
        ContainerEventType.UPDATE_DIAGNOSTICS_MSG,
        UPDATE_DIAGNOSTICS_TRANSITION)
@@ -236,13 +236,13 @@ public class ContainerImpl implements Container {
 
     // From RUNNING State
     .addTransition(ContainerState.RUNNING,
-        ContainerState.EXITED_WITH_SUCCESS,
-        ContainerEventType.CONTAINER_EXITED_WITH_SUCCESS,
-        new ExitedWithSuccessTransition(true))
+            ContainerState.EXITED_WITH_SUCCESS,
+            ContainerEventType.CONTAINER_EXITED_WITH_SUCCESS,
+            new ExitedWithSuccessTransition(true))
     .addTransition(ContainerState.RUNNING,
-        ContainerState.EXITED_WITH_FAILURE,
-        ContainerEventType.CONTAINER_EXITED_WITH_FAILURE,
-        new ExitedWithFailureTransition(true))
+            ContainerState.EXITED_WITH_FAILURE,
+            ContainerEventType.CONTAINER_EXITED_WITH_FAILURE,
+            new ExitedWithFailureTransition(true))
     .addTransition(ContainerState.RUNNING, ContainerState.RUNNING,
        ContainerEventType.UPDATE_DIAGNOSTICS_MSG,
        UPDATE_DIAGNOSTICS_TRANSITION)
@@ -252,7 +252,11 @@ public class ContainerImpl implements Container {
         ContainerEventType.CONTAINER_KILLED_ON_REQUEST,
         new KilledExternallyTransition())
     .addTransition(ContainerState.RUNNING, ContainerState.RUNNING,
-        ContainerEventType.CHANGE_CONTAINER, new ContainerResourceChangeTransition())
+        ContainerEventType.CHANGE_CONTAINER_RESOURCE,
+        new ChangeContainerResourceTransition())
+    .addTransition(ContainerState.RUNNING, ContainerState.RUNNING,
+        ContainerEventType.CONTAINER_RESOURCE_CHANGED,
+        new ContainerResourceChangedTransition())
 
     // From CONTAINER_EXITED_WITH_SUCCESS State
     .addTransition(ContainerState.EXITED_WITH_SUCCESS, ContainerState.DONE,
@@ -427,7 +431,7 @@ public class ContainerImpl implements Container {
     this.readLock.lock();
     try {
       return BuilderUtils.newContainerStatus(this.containerId,
-        getCurrentState(), diagnostics.toString(), exitCode);
+        getCurrentState(), diagnostics.toString(), exitCode, getResource());
     } finally {
       this.readLock.unlock();
     }
@@ -523,15 +527,15 @@ public class ContainerImpl implements Container {
   // Inform the ContainersMonitor that the container's resource usage
   // has changed, and monitor accordingly.
   @SuppressWarnings("unchecked")
-  private void sendContainerMonitorChangeEvent() {
-    long pmemBytes = getResource().getMemory() * 1024 * 1024L;
+  private void sendChangeMonitorContainerResourceEvent(Resource target) {
+    long pmemBytes = target.getMemory() * 1024 * 1024L;
     float pmemRatio = daemonConf.getFloat(
             YarnConfiguration.NM_VMEM_PMEM_RATIO,
             YarnConfiguration.DEFAULT_NM_VMEM_PMEM_RATIO);
     long vmemBytes = (long) (pmemRatio * pmemBytes);
-    int cpuVcores = getResource().getVirtualCores();
+    int cpuVcores = target.getVirtualCores();
     dispatcher.getEventHandler().handle(
-        new ContainerChangeMonitoringEvent(containerId,
+        new ChangeMonitoringContainerResourceEvent(containerId,
                 vmemBytes, pmemBytes, cpuVcores));
   }
 
@@ -799,16 +803,25 @@ public class ContainerImpl implements Container {
     }
   }
 
-  static class ContainerResourceChangeTransition extends ContainerTransition {
+  static class ChangeContainerResourceTransition extends ContainerTransition {
     @SuppressWarnings("unchecked")
     @Override
     public void transition(ContainerImpl container, ContainerEvent event) {
-      ContainerChangeEvent changeEvent = (ContainerChangeEvent)event;
-      Resource currentResource = container.getResource();
+      ChangeContainerResourceEvent changeEvent = (ChangeContainerResourceEvent)event;
       Resource targetResource = changeEvent.getResource();
+      container.sendChangeMonitorContainerResourceEvent(targetResource);
+    }
+  }
+
+  static class ContainerResourceChangedTransition extends ContainerTransition {
+    @SuppressWarnings("unchecked")
+    @Override
+    public void transition(ContainerImpl container, ContainerEvent event) {
+      ContainerResourceChangedEvent changedEvent = (ContainerResourceChangedEvent)event;
+      Resource currentResource = container.getResource();
+      Resource targetResource = changedEvent.getResource();
       container.resource = targetResource;
       container.metrics.changeContainer(currentResource, targetResource);
-      container.sendContainerMonitorChangeEvent();
     }
   }
 
