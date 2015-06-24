@@ -49,6 +49,7 @@ import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ContainerState;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
+import org.apache.hadoop.yarn.api.records.DecreasedContainer;
 import org.apache.hadoop.yarn.api.records.IncreasedContainer;
 import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.api.records.NodeLabel;
@@ -797,6 +798,14 @@ public class NodeStatusUpdaterImpl extends AbstractService implements
             if (systemCredentials != null && !systemCredentials.isEmpty()) {
               ((NMContext) context)
                 .setSystemCrendentialsForApps(parseCredentials(systemCredentials));
+            }
+
+            List<DecreasedContainer> containersToDecrease =
+                response.getContainersToDecrease();
+            if (!containersToCleanup.isEmpty()) {
+              dispatcher.getEventHandler().handle(
+                  new CMgrDecreaseContainersResourceEvent(containersToDecrease)
+              );
             }
           } catch (ConnectException e) {
             //catch and throw the exception if tried MAX wait time to connect RM

@@ -74,6 +74,7 @@ import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
 import org.apache.hadoop.yarn.api.records.ContainerState;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
+import org.apache.hadoop.yarn.api.records.DecreasedContainer;
 import org.apache.hadoop.yarn.api.records.LogAggregationContext;
 import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.api.records.Resource;
@@ -97,6 +98,7 @@ import org.apache.hadoop.yarn.security.ContainerTokenIdentifier;
 import org.apache.hadoop.yarn.security.NMTokenIdentifier;
 import org.apache.hadoop.yarn.server.nodemanager.CMgrCompletedAppsEvent;
 import org.apache.hadoop.yarn.server.nodemanager.CMgrCompletedContainersEvent;
+import org.apache.hadoop.yarn.server.nodemanager.CMgrDecreaseContainersResourceEvent;
 import org.apache.hadoop.yarn.server.nodemanager.ContainerExecutor;
 import org.apache.hadoop.yarn.server.nodemanager.ContainerManagerEvent;
 import org.apache.hadoop.yarn.server.nodemanager.Context;
@@ -1349,6 +1351,17 @@ public class ContainerManagerImpl extends CompositeService implements
               new ContainerKillEvent(container,
                   ContainerExitStatus.KILLED_BY_RESOURCEMANAGER,
                   "Container Killed by ResourceManager"));
+      }
+      break;
+    case DECREASE_CONTAINERS_RESOURCE:
+      CMgrDecreaseContainersResourceEvent containersDecreasedEvent =
+          (CMgrDecreaseContainersResourceEvent) event;
+      for (DecreasedContainer container : containersDecreasedEvent
+          .getContainersToDecrease()) {
+        this.dispatcher.getEventHandler().handle(
+            new ChangeContainerResourceEvent(
+                container.getContainerId(),
+                container.getCapability()));
       }
       break;
     default:
