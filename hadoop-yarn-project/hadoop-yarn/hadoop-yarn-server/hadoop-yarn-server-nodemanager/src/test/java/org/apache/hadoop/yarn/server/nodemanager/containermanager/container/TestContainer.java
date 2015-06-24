@@ -21,6 +21,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNotEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
@@ -600,6 +601,10 @@ public class TestContainer {
       wc.changeContainer(targetResource);
       assertEquals(ContainerState.RUNNING,
               wc.c.getContainerState());
+      assertNotEquals(wc.c.getResource(), targetResource);
+      wc.changedContainer(targetResource);
+      assertEquals(ContainerState.RUNNING,
+              wc.c.getContainerState());
       assertEquals(wc.c.getResource(), targetResource);
     } finally {
       if (wc != null) {
@@ -929,6 +934,11 @@ public class TestContainer {
 
     public void changeContainer(Resource resource) {
       c.handle(new ChangeContainerResourceEvent(cId, resource));
+      drainDispatcherEvents();
+    }
+
+    public void changedContainer(Resource resource) {
+      c.handle(new ContainerResourceChangedEvent(cId, resource));
       drainDispatcherEvents();
     }
 
