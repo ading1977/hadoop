@@ -57,6 +57,7 @@ import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
 import org.apache.hadoop.yarn.api.records.ContainerState;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
+import org.apache.hadoop.yarn.api.records.DecreasedContainer;
 import org.apache.hadoop.yarn.api.records.LocalResource;
 import org.apache.hadoop.yarn.api.records.LocalResourceType;
 import org.apache.hadoop.yarn.api.records.LocalResourceVisibility;
@@ -74,6 +75,7 @@ import org.apache.hadoop.yarn.security.ContainerTokenIdentifier;
 import org.apache.hadoop.yarn.security.NMTokenIdentifier;
 import org.apache.hadoop.yarn.server.api.ResourceManagerConstants;
 import org.apache.hadoop.yarn.server.nodemanager.CMgrCompletedAppsEvent;
+import org.apache.hadoop.yarn.server.nodemanager.CMgrDecreaseContainersResourceEvent;
 import org.apache.hadoop.yarn.server.nodemanager.DefaultContainerExecutor;
 import org.apache.hadoop.yarn.server.nodemanager.DeletionService;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.TestAuxServices.ServiceA;
@@ -89,6 +91,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
+
+import static org.junit.Assert.assertEquals;
 
 public class TestContainerManager extends BaseContainerManagerTest {
 
@@ -878,7 +882,7 @@ public class TestContainerManager extends BaseContainerManagerTest {
       strExceptionMsg = ye.getCause().getMessage();
     }
     Assert.assertEquals(strExceptionMsg,
-        ContainerManagerImpl.INVALID_CONTAINERTOKEN_MSG);
+            ContainerManagerImpl.INVALID_CONTAINERTOKEN_MSG);
   }
 
   @Test
@@ -1008,7 +1012,7 @@ public class TestContainerManager extends BaseContainerManagerTest {
                     containermanager.container.ContainerState.RUNNING);
     // Construct container resource increase request,
     List<Token> increaseTokens = new ArrayList<Token>();
-    // Add increase request. The increase request will fail
+    // Add increase request. The increase request should fail
     // as the current resource does not fit in the target resource
     Token containerToken =
             createContainerToken(cId, DUMMY_RM_IDENTIFIER,
@@ -1030,15 +1034,107 @@ public class TestContainerManager extends BaseContainerManagerTest {
       if (cId.equals(entry.getKey())) {
         Assert.assertNotNull("Failed message", entry.getValue().getMessage());
         Assert.assertTrue(entry.getValue().getMessage()
-                .contains("The current resource "
-                        + Resource.newInstance(1024, 1).toString()
-                        + " is smaller than the target resource "
-                        + Resource.newInstance(512, 1)));
+                .contains("The target resource "
+                        + Resource.newInstance(512, 1).toString()
+                        + " is smaller than the current resource "
+                        + Resource.newInstance(1024, 1)));
       } else {
         throw new YarnException("Received failed request from wrong"
                 + " container: " + entry.getKey().toString());
       }
     }
+  }
+
+  @Test
+  public void testChangeContainerResource() throws Exception {
+    containerManager.start();
+    File scriptFile = Shell.appendScriptExtension(tmpDir, "scriptFile");
+    PrintWriter fileWriter = new PrintWriter(scriptFile);
+    // Construct the Container-id
+    ContainerId cId = createContainerId(0);
+    if (Shell.WINDOWS) {
+      fileWriter.println("@ping -n 100 127.0.0.1 >nul");
+    } else {
+      fileWriter.write("\numask 0");
+      fileWriter.write("\nexec sleep 100");
+    }
+    fileWriter.close();
+    ContainerLaunchContext containerLaunchContext =
+            recordFactory.newRecordInstance(ContainerLaunchContext.class);
+    URL resource_alpha =
+            ConverterUtils.getYarnUrlFromPath(localFS
+                    .makeQualified(new Path(scriptFile.getAbsolutePath())));
+    LocalResource rsrc_alpha =
+            recordFactory.newRecordInstance(LocalResource.class);
+    rsrc_alpha.setResource(resource_alpha);
+    rsrc_alpha.setSize(-1);
+    rsrc_alpha.setVisibility(LocalResourceVisibility.APPLICATION);
+    rsrc_alpha.setType(LocalResourceType.FILE);
+    rsrc_alpha.setTimestamp(scriptFile.lastModified());
+    String destinationFile = "dest_file";
+    Map<String, LocalResource> localResources =
+            new HashMap<String, LocalResource>();
+    localResources.put(destinationFile, rsrc_alpha);
+    containerLaunchContext.setLocalResources(localResources);
+    List<String> commands =
+            Arrays.asList(Shell.getRunScriptCommand(scriptFile));
+    containerLaunchContext.setCommands(commands);
+
+    StartContainerRequest scRequest =
+            StartContainerRequest.newInstance(
+                    containerLaunchContext,
+                    createContainerToken(cId, DUMMY_RM_IDENTIFIER, context.getNodeId(),
+                            user, context.getContainerTokenSecretManager()));
+    List<StartContainerRequest> list = new ArrayList<StartContainerRequest>();
+    list.add(scRequest);
+    StartContainersRequest allRequests =
+            StartContainersRequest.newInstance(list);
+    containerManager.startContainers(allRequests);
+    // Make sure the container reaches RUNNING state
+    BaseContainerManagerTest.waitForNMContainerState(containerManager, cId,
+            org.apache.hadoop.yarn.server.nodemanager.
+                    containermanager.container.ContainerState.RUNNING);
+    // Construct container resource increase request,
+    List<Token> increaseTokens = new ArrayList<Token>();
+    // Add increase request.
+    Resource targetResource = Resource.newInstance(4096, 2);
+    Token containerToken =
+            createContainerToken(cId, DUMMY_RM_IDENTIFIER,
+                    context.getNodeId(), user, targetResource,
+                    context.getContainerTokenSecretManager(), null);
+    increaseTokens.add(containerToken);
+    IncreaseContainersResourceRequest increaseRequest =
+            IncreaseContainersResourceRequest
+                    .newInstance(increaseTokens);
+    IncreaseContainersResourceResponse increaseResponse =
+            containerManager.increaseContainersResource(increaseRequest);
+    Assert.assertEquals(
+            1, increaseResponse.getSuccessfullyIncreasedContainers().size());
+    Assert.assertTrue(increaseResponse.getFailedRequests().isEmpty());
+    // Check status
+    final int msecSleep = YarnConfiguration
+            .DEFAULT_NM_CONTAINER_MON_INTERVAL_MS;
+    Thread.sleep(msecSleep);
+    List<ContainerId> containerIds = new ArrayList<>();
+    containerIds.add(cId);
+    GetContainerStatusesRequest gcsRequest =
+            GetContainerStatusesRequest.newInstance(containerIds);
+    ContainerStatus containerStatus = containerManager
+            .getContainerStatuses(gcsRequest).getContainerStatuses().get(0);
+    assertEquals(targetResource, containerStatus.getCapability());
+    // Simulate a decrease request
+    List<DecreasedContainer> containersToDecrease = new ArrayList<>();
+    targetResource = Resource.newInstance(2048, 2);
+    DecreasedContainer decreasedContainer = DecreasedContainer
+            .newInstance(cId, targetResource);
+    containersToDecrease.add(decreasedContainer);
+    containerManager.handle(
+            new CMgrDecreaseContainersResourceEvent(containersToDecrease));
+    // Check status
+    Thread.sleep(msecSleep);
+    containerStatus = containerManager
+            .getContainerStatuses(gcsRequest).getContainerStatuses().get(0);
+    assertEquals(targetResource, containerStatus.getCapability());
   }
 
   public static Token createContainerToken(ContainerId cId, long rmIdentifier,

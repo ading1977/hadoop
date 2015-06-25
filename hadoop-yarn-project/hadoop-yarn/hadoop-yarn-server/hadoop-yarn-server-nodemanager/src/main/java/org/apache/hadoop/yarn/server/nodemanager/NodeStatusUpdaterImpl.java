@@ -802,7 +802,7 @@ public class NodeStatusUpdaterImpl extends AbstractService implements
 
             List<DecreasedContainer> containersToDecrease =
                 response.getContainersToDecrease();
-            if (!containersToCleanup.isEmpty()) {
+            if (!containersToDecrease.isEmpty()) {
               dispatcher.getEventHandler().handle(
                   new CMgrDecreaseContainersResourceEvent(containersToDecrease)
               );
