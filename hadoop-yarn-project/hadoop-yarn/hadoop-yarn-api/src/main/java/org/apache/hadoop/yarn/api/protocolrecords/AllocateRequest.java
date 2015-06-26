@@ -26,7 +26,7 @@ import org.apache.hadoop.yarn.api.ApplicationMasterProtocol;
 import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ResourceBlacklistRequest;
-import org.apache.hadoop.yarn.api.records.ContainerResourceIncreaseRequest;
+import org.apache.hadoop.yarn.api.records.ContainerResourceChangeRequest;
 import org.apache.hadoop.yarn.api.records.ResourceRequest;
 import org.apache.hadoop.yarn.util.Records;
 
@@ -61,16 +61,18 @@ public abstract class AllocateRequest {
       List<ContainerId> containersToBeReleased,
       ResourceBlacklistRequest resourceBlacklistRequest) {
     return newInstance(responseID, appProgress, resourceAsk,
-        containersToBeReleased, resourceBlacklistRequest, null);
+        containersToBeReleased, resourceBlacklistRequest, null, null);
   }
   
   @Public
   @Stable
-  public static AllocateRequest newInstance(int responseID, float appProgress,
-      List<ResourceRequest> resourceAsk,
-      List<ContainerId> containersToBeReleased,
-      ResourceBlacklistRequest resourceBlacklistRequest,
-      List<ContainerResourceIncreaseRequest> increaseRequests) {
+  public static AllocateRequest newInstance(int responseID,
+                      float appProgress,
+                      List<ResourceRequest> resourceAsk,
+                      List<ContainerId> containersToBeReleased,
+                      ResourceBlacklistRequest resourceBlacklistRequest,
+                      List<ContainerResourceChangeRequest> increaseRequests,
+                      List<ContainerResourceChangeRequest> decreaseRequests) {
     AllocateRequest allocateRequest = Records.newRecord(AllocateRequest.class);
     allocateRequest.setResponseId(responseID);
     allocateRequest.setProgress(appProgress);
@@ -78,6 +80,7 @@ public abstract class AllocateRequest {
     allocateRequest.setReleaseList(containersToBeReleased);
     allocateRequest.setResourceBlacklistRequest(resourceBlacklistRequest);
     allocateRequest.setIncreaseRequests(increaseRequests);
+    allocateRequest.setDecreaseRequests(decreaseRequests);
     return allocateRequest;
   }
   
@@ -184,20 +187,38 @@ public abstract class AllocateRequest {
       ResourceBlacklistRequest resourceBlacklistRequest);
   
   /**
-   * Get the <code>ContainerResourceIncreaseRequest</code> being sent by the
-   * <code>ApplicationMaster</code>
+   * Get the list of container resource increase requests being sent by the
+   * <code>ApplicationMaster</code>.
    */
   @Public
   @Stable
-  public abstract List<ContainerResourceIncreaseRequest> getIncreaseRequests();
-  
+  public abstract List<ContainerResourceChangeRequest> getIncreaseRequests();
+
   /**
-   * Set the <code>ContainerResourceIncreaseRequest</code> to inform the
-   * <code>ResourceManager</code> about some container's resources need to be
-   * increased
+   * Set the list of container resource increase requests to inform the
+   * <code>ResourceManager</code> about the containers whose resources need
+   * to be increased.
    */
   @Public
   @Stable
   public abstract void setIncreaseRequests(
-      List<ContainerResourceIncreaseRequest> increaseRequests);
+      List<ContainerResourceChangeRequest> increaseRequests);
+
+  /**
+   * Get the list of container resource decrease requests being sent by the
+   * <code>ApplicationMaster</code>.
+   */
+  @Public
+  @Stable
+  public abstract List<ContainerResourceChangeRequest> getDecreaseRequests();
+
+  /**
+   * Set the list of container resource decrease requests to inform the
+   * <code>ResourceManager</code> about the containers whose resources need
+   * to be decreased.
+   */
+  @Public
+  @Stable
+  public abstract void setDecreaseRequests(
+      List<ContainerResourceChangeRequest> decreaseRequests);
 }

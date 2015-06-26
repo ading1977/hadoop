@@ -21,26 +21,33 @@ package org.apache.hadoop.yarn.api;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.hadoop.yarn.api.records.ContainerResourceChangeRequest;
 import org.junit.Assert;
 
 import org.apache.hadoop.yarn.api.protocolrecords.AllocateRequest;
 import org.apache.hadoop.yarn.api.protocolrecords.impl.pb.AllocateRequestPBImpl;
 import org.apache.hadoop.yarn.api.records.Resource;
-import org.apache.hadoop.yarn.api.records.ContainerResourceIncreaseRequest;
 import org.apache.hadoop.yarn.proto.YarnServiceProtos.AllocateRequestProto;
 import org.junit.Test;
 
 public class TestAllocateRequest {
   @Test
-  public void testAllcoateRequestWithIncrease() {
-    List<ContainerResourceIncreaseRequest> incRequests =
-        new ArrayList<ContainerResourceIncreaseRequest>();
+  public void testAllcoateRequestWithIncreaseAndDecrease() {
+    List<ContainerResourceChangeRequest> incRequests =
+        new ArrayList<ContainerResourceChangeRequest>();
+    List<ContainerResourceChangeRequest> decRequests =
+        new ArrayList<ContainerResourceChangeRequest>();
     for (int i = 0; i < 3; i++) {
-      incRequests.add(ContainerResourceIncreaseRequest.newInstance(null,
-          Resource.newInstance(0, i)));
+      incRequests.add(ContainerResourceChangeRequest.newInstance(null,
+              Resource.newInstance(0, i)));
+    }
+    for (int i = 0; i < 3; i++) {
+      decRequests.add(ContainerResourceChangeRequest.newInstance(null,
+              Resource.newInstance(0, i)));
     }
     AllocateRequest r =
-        AllocateRequest.newInstance(123, 0f, null, null, null, incRequests);
+        AllocateRequest.newInstance(123, 0f, null, null, null,
+                incRequests, decRequests);
 
     // serde
     AllocateRequestProto p = ((AllocateRequestPBImpl) r).getProto();
@@ -49,18 +56,24 @@ public class TestAllocateRequest {
     // check value
     Assert.assertEquals(123, r.getResponseId());
     Assert.assertEquals(incRequests.size(), r.getIncreaseRequests().size());
+    Assert.assertEquals(decRequests.size(), r.getDecreaseRequests().size());
 
     for (int i = 0; i < incRequests.size(); i++) {
       Assert.assertEquals(r.getIncreaseRequests().get(i).getCapability()
           .getVirtualCores(), incRequests.get(i).getCapability()
           .getVirtualCores());
     }
+    for (int i = 0; i < decRequests.size(); i++) {
+      Assert.assertEquals(r.getDecreaseRequests().get(i).getCapability()
+              .getVirtualCores(), decRequests.get(i).getCapability()
+              .getVirtualCores());
+    }
   }
 
   @Test
-  public void testAllcoateRequestWithoutIncrease() {
+  public void testAllcoateRequestWithoutIncreaseAndDecrease() {
     AllocateRequest r =
-        AllocateRequest.newInstance(123, 0f, null, null, null, null);
+        AllocateRequest.newInstance(123, 0f, null, null, null, null, null);
 
     // serde
     AllocateRequestProto p = ((AllocateRequestPBImpl) r).getProto();

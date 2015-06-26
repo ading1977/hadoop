@@ -26,12 +26,12 @@ import org.apache.hadoop.yarn.util.Records;
  * Resource Manager
  */
 @Public
-public abstract class ContainerResourceIncreaseRequest {
+public abstract class ContainerResourceChangeRequest {
   @Public
-  public static ContainerResourceIncreaseRequest newInstance(
+  public static ContainerResourceChangeRequest newInstance(
       ContainerId existingContainerId, Resource targetCapability) {
-    ContainerResourceIncreaseRequest context = Records
-        .newRecord(ContainerResourceIncreaseRequest.class);
+    ContainerResourceChangeRequest context = Records
+        .newRecord(ContainerResourceChangeRequest.class);
     context.setContainerId(existingContainerId);
     context.setCapability(targetCapability);
     return context;
@@ -56,9 +56,9 @@ public abstract class ContainerResourceIncreaseRequest {
   
   @Override
   public boolean equals(Object other) {
-    if (other instanceof ContainerResourceIncreaseRequest) {
-      ContainerResourceIncreaseRequest ctx =
-          (ContainerResourceIncreaseRequest) other;
+    if (other instanceof ContainerResourceChangeRequest) {
+      ContainerResourceChangeRequest ctx =
+          (ContainerResourceChangeRequest) other;
       
       if (getContainerId() == null && ctx.getContainerId() != null) {
         return false;

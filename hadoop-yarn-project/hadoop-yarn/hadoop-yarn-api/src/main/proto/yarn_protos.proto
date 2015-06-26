@@ -466,7 +466,7 @@ enum ContainerExitStatusProto {
   DISKS_FAILED = -101;
 }
 
-message ContainerResourceIncreaseRequestProto {
+message ContainerResourceChangeRequestProto {
   optional ContainerIdProto container_id = 1;
   optional ResourceProto capability = 2;
 } 

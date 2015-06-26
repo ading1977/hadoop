@@ -948,7 +948,7 @@ public class TestContainerManager extends BaseContainerManagerTest {
       Assert.assertNotNull("Failed message", entry.getValue().getMessage());
       if (cId0.equals(entry.getKey())) {
         Assert.assertTrue(entry.getValue().getMessage()
-          .contains("Resource can only be increased when a "
+          .contains("Resource can only be changed when a "
                   + "container is in RUNNING state"));
       } else if (cId7.equals(entry.getKey())) {
         Assert.assertTrue(entry.getValue().getMessage()

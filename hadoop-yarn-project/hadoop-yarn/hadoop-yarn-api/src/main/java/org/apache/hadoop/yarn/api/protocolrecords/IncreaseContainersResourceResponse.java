@@ -49,7 +49,8 @@ public abstract class IncreaseContainersResourceResponse {
       Map<ContainerId, SerializedException> failedRequests) {
     IncreaseContainersResourceResponse response =
         Records.newRecord(IncreaseContainersResourceResponse.class);
-    response.setSuccessfullyIncreasedContainers(successfullyIncreasedContainers);
+    response.setSuccessfullyIncreasedContainers(
+            successfullyIncreasedContainers);
     response.setFailedRequests(failedRequests);
     return response;
   }

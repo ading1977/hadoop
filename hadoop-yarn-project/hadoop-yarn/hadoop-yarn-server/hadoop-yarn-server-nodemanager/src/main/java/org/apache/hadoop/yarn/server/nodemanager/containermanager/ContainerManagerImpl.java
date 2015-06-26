@@ -951,8 +951,8 @@ public class ContainerManagerImpl extends CompositeService implements
     /*
      * Check the following:
      * 1. The request comes from the same application attempt
-     * 2. The request posses a container token that has not expired
-     * 3. The request posses a container token that is granted by a known RM
+     * 2. The request possess a container token that has not expired
+     * 3. The request possess a container token that is granted by a known RM
      */
     ContainerId containerId = containerTokenIdentifier.getContainerID();
     boolean unauthorized = false;
@@ -1069,7 +1069,7 @@ public class ContainerManagerImpl extends CompositeService implements
             nodemanager.containermanager.container.ContainerState.RUNNING) {
       throw RPCUtil.getRemoteException("Container " + containerId.toString()
           + " is in " + currentState.name() + " state."
-          + " Resource can only be increased when a container is in"
+          + " Resource can only be changed when a container is in"
           + " RUNNING state");
     }
     // Check validity of the target resource.

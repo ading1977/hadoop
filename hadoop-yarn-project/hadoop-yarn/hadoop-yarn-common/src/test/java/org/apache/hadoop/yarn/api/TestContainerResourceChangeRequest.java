@@ -18,32 +18,32 @@
 
 package org.apache.hadoop.yarn.api;
 
+import org.apache.hadoop.yarn.api.records.impl.pb.ContainerResourceChangeRequestPBImpl;
 import org.junit.Assert;
 
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ContainerId;
-import org.apache.hadoop.yarn.api.records.ContainerResourceIncreaseRequest;
+import org.apache.hadoop.yarn.api.records.ContainerResourceChangeRequest;
 import org.apache.hadoop.yarn.api.records.Resource;
-import org.apache.hadoop.yarn.api.records.impl.pb.ContainerResourceIncreaseRequestPBImpl;
-import org.apache.hadoop.yarn.proto.YarnProtos.ContainerResourceIncreaseRequestProto;
+import org.apache.hadoop.yarn.proto.YarnProtos.ContainerResourceChangeRequestProto;
 import org.junit.Test;
 
-public class TestContainerResourceIncreaseRequest {
+public class TestContainerResourceChangeRequest {
   @Test
   public void ContainerResourceIncreaseRequest() {
     ContainerId containerId = ContainerId
         .newContainerId(ApplicationAttemptId.newInstance(
             ApplicationId.newInstance(1234, 3), 3), 7);
     Resource resource = Resource.newInstance(1023, 3);
-    ContainerResourceIncreaseRequest context = ContainerResourceIncreaseRequest
+    ContainerResourceChangeRequest context = ContainerResourceChangeRequest
         .newInstance(containerId, resource);
 
     // to proto and get it back
-    ContainerResourceIncreaseRequestProto proto = 
-        ((ContainerResourceIncreaseRequestPBImpl) context).getProto();
-    ContainerResourceIncreaseRequest contextRecover = 
-        new ContainerResourceIncreaseRequestPBImpl(proto);
+    ContainerResourceChangeRequestProto proto =
+        ((ContainerResourceChangeRequestPBImpl) context).getProto();
+    ContainerResourceChangeRequest contextRecover =
+        new ContainerResourceChangeRequestPBImpl(proto);
 
     // check value
     Assert.assertEquals(contextRecover.getContainerId(), containerId);
@@ -52,14 +52,14 @@ public class TestContainerResourceIncreaseRequest {
 
   @Test
   public void testResourceChangeContextWithNullField() {
-    ContainerResourceIncreaseRequest context = ContainerResourceIncreaseRequest
+    ContainerResourceChangeRequest context = ContainerResourceChangeRequest
         .newInstance(null, null);
 
     // to proto and get it back
-    ContainerResourceIncreaseRequestProto proto = 
-        ((ContainerResourceIncreaseRequestPBImpl) context).getProto();
-    ContainerResourceIncreaseRequest contextRecover = 
-        new ContainerResourceIncreaseRequestPBImpl(proto);
+    ContainerResourceChangeRequestProto proto =
+        ((ContainerResourceChangeRequestPBImpl) context).getProto();
+    ContainerResourceChangeRequest contextRecover =
+        new ContainerResourceChangeRequestPBImpl(proto);
 
     // check value
     Assert.assertNull(contextRecover.getContainerId());
