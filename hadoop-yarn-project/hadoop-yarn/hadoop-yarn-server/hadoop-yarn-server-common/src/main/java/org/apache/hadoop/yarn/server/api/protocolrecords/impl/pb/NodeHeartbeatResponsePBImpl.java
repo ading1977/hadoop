@@ -441,6 +441,7 @@ public class NodeHeartbeatResponsePBImpl extends
     if (containersToDecrease == null) {
       return;
     }
+    initContainersToDecrease();
     this.containersToDecrease.addAll(containersToDecrease);
   }
 
