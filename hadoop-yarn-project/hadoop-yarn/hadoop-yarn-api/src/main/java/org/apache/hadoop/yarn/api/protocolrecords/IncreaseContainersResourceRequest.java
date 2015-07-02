@@ -30,13 +30,7 @@ import org.apache.hadoop.yarn.util.Records;
  * <p>The request sent by <code>Application Master</code> to the
  * <code>Node Manager</code> to change the resource quota of a container.</p>
  *
- * <p>For container resource increase, the <code>ApplicationMaster</code> has
- * to provide a security token. For container resource decrease, the
- * <code>ApplicationMaster</code> has to provide the container ID and the
- * target resource capability.</p>
- *
- * @see ContainerManagementProtocol
- *      #increaseContainersResource(IncreaseContainersResourceRequest)
+ * @see ContainerManagementProtocol#increaseContainersResource(IncreaseContainersResourceRequest)
  */
 @Public
 @Stable

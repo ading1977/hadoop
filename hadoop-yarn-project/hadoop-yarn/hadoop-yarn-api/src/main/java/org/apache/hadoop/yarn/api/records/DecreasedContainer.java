@@ -18,15 +18,40 @@
 
 package org.apache.hadoop.yarn.api.records;
 
+import org.apache.hadoop.classification.InterfaceAudience.Private;
 import org.apache.hadoop.classification.InterfaceAudience.Public;
+import org.apache.hadoop.classification.InterfaceStability.Stable;
+import org.apache.hadoop.classification.InterfaceStability.Unstable;
+import org.apache.hadoop.yarn.api.ApplicationMasterProtocol;
+import org.apache.hadoop.yarn.api.ContainerManagementProtocol;
 import org.apache.hadoop.yarn.util.Records;
 
 /**
- * Used by Application Master to ask Node Manager reduce size of a specified
- * container
+ * {@code DecreasedContainer} represents a running container whose
+ * allocated resource has been decreased.
+ * <p>
+ * The {@code ResourceManager} is the sole authority to decrease
+ * resource to any running {@code Container} in an application.
+ * <p>
+ * It includes details such as:
+ * <ul>
+ *   <li>{@link ContainerId} for the container.</li>
+ *   <li>{@link Resource} allocated to the container.</li>
+ * </ul>
+ * <p>
+ * An {@code ApplicationMaster} receives the {@code DecreasedContainer}
+ * from the {@code ResourceManager} during resource-negotiation.
+ * After this, the {@code ApplicationMaster} is expected to call
+ * {@code ContainerManager.getContainerStatuses} to confirm whether a container
+ * resource decrease has been completed in {@code NodeManager}.
+ *
+ * @see ApplicationMasterProtocol#allocate(AllocateRequest)
+ * @see ContainerManagementProtocol#getContainerStatuses(GetContainerStatusesRequest)
  */
 public abstract class DecreasedContainer {
-  @Public
+
+  @Private
+  @Unstable
   public static DecreasedContainer newInstance(
       ContainerId existingContainerId, Resource targetCapability) {
     DecreasedContainer context = Records
@@ -36,43 +61,27 @@ public abstract class DecreasedContainer {
     return context;
   }
 
+  /**
+   * Get the <code>ContainerId</code> of the container.
+   * @return <code>ContainerId</code> of the container
+   */
   @Public
+  @Stable
   public abstract ContainerId getContainerId();
 
-  @Public
+  @Private
+  @Unstable
   public abstract void setContainerId(ContainerId containerId);
 
+  /**
+   * Get the <code>Resource</code> allocated to the container.
+   * @return <code>Resource</code> allocated to the container
+   */
   @Public
+  @Stable
   public abstract Resource getCapability();
 
-  @Public
+  @Private
+  @Unstable
   public abstract void setCapability(Resource capability);
-  
-  @Override
-  public int hashCode() {
-    return getCapability().hashCode() + getContainerId().hashCode();
-  }
-
-  @Override
-  public boolean equals(Object other) {
-    if (other instanceof DecreasedContainer) {
-      DecreasedContainer ctx = (DecreasedContainer)other;
-      
-      if (getContainerId() == null && ctx.getContainerId() != null) {
-        return false;
-      } else if (!getContainerId().equals(ctx.getContainerId())) {
-        return false;
-      }
-      
-      if (getCapability() == null && ctx.getCapability() != null) {
-        return false;
-      } else if (!getCapability().equals(ctx.getCapability())) {
-        return false;
-      }
-      
-      return true;
-    } else {
-      return false;
-    }
-  }
 }

@@ -66,13 +66,12 @@ public abstract class AllocateRequest {
   
   @Public
   @Stable
-  public static AllocateRequest newInstance(int responseID,
-                      float appProgress,
-                      List<ResourceRequest> resourceAsk,
-                      List<ContainerId> containersToBeReleased,
-                      ResourceBlacklistRequest resourceBlacklistRequest,
-                      List<ContainerResourceChangeRequest> increaseRequests,
-                      List<ContainerResourceChangeRequest> decreaseRequests) {
+  public static AllocateRequest newInstance(int responseID, float appProgress,
+      List<ResourceRequest> resourceAsk,
+      List<ContainerId> containersToBeReleased,
+      ResourceBlacklistRequest resourceBlacklistRequest,
+      List<ContainerResourceChangeRequest> increaseRequests,
+      List<ContainerResourceChangeRequest> decreaseRequests) {
     AllocateRequest allocateRequest = Records.newRecord(AllocateRequest.class);
     allocateRequest.setResponseId(responseID);
     allocateRequest.setProgress(appProgress);

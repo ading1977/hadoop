@@ -34,6 +34,7 @@ import org.apache.hadoop.yarn.util.Records;
  *   <li>{@code ContainerState} of the container.</li>
  *   <li><em>Exit status</em> of a completed container.</li>
  *   <li><em>Diagnostic</em> message for a failed container.</li>
+ *   <li>{@link Resource} allocated to the container.</li>
  * </ul>
  */
 @Public
@@ -115,6 +116,10 @@ public abstract class ContainerStatus {
   @Unstable
   public abstract void setDiagnostics(String diagnostics);
 
+  /**
+   * Get the <code>Resource</code> allocated to the container.
+   * @return <code>Resource</code> allocated to the container
+   */
   @Public
   @Stable
   public abstract Resource getCapability();

@@ -19,15 +19,31 @@
 package org.apache.hadoop.yarn.api.records;
 
 import org.apache.hadoop.classification.InterfaceAudience.Public;
+import org.apache.hadoop.classification.InterfaceStability.Stable;
+import org.apache.hadoop.yarn.api.ApplicationMasterProtocol;
 import org.apache.hadoop.yarn.util.Records;
 
 /**
- * Used by Application Master, send a container resource increase request to
- * Resource Manager
+ * {@code ContainerResourceChangeRequest} represents the request made by an
+ * application to the {@code ResourceManager} to change resource allocation of
+ * a running {@code Container}.
+ * <p>
+ * It includes:
+ * <ul>
+ *   <li>{@link ContainerId} for the container.</li>
+ *   <li>
+ *     {@link Resource} capability of the container after the resource change
+ *     is completed.
+ *   </li>
+ * </ul>
+ *
+ * @see ApplicationMasterProtocol#allocate(org.apache.hadoop.yarn.api.protocolrecords.AllocateRequest)
  */
 @Public
 public abstract class ContainerResourceChangeRequest {
+
   @Public
+  @Stable
   public static ContainerResourceChangeRequest newInstance(
       ContainerId existingContainerId, Resource targetCapability) {
     ContainerResourceChangeRequest context = Records
@@ -37,41 +53,61 @@ public abstract class ContainerResourceChangeRequest {
     return context;
   }
 
+  /**
+   * Get the <code>ContainerId</code> of the container.
+   * @return <code>ContainerId</code> of the container
+   */
   @Public
+  @Stable
   public abstract ContainerId getContainerId();
 
+  /**
+   * Set the <code>ContainerId</code> of the container.
+   * @param containerId <code>ContainerId</code> of the container
+   */
   @Public
+  @Stable
   public abstract void setContainerId(ContainerId containerId);
 
+  /**
+   * Get the <code>Resource</code> capability of the container.
+   * @return <code>Resource</code> capability of the container
+   */
   @Public
+  @Stable
   public abstract Resource getCapability();
 
+  /**
+   * Set the <code>Resource</code> capability of the container.
+   * @param capability <code>Resource</code> capability of the container
+   */
   @Public
+  @Stable
   public abstract void setCapability(Resource capability);
 
   @Override
   public int hashCode() {
     return getCapability().hashCode() + getContainerId().hashCode();
   }
-  
+
   @Override
   public boolean equals(Object other) {
     if (other instanceof ContainerResourceChangeRequest) {
       ContainerResourceChangeRequest ctx =
           (ContainerResourceChangeRequest) other;
-      
+
       if (getContainerId() == null && ctx.getContainerId() != null) {
         return false;
       } else if (!getContainerId().equals(ctx.getContainerId())) {
         return false;
       }
-      
+
       if (getCapability() == null && ctx.getCapability() != null) {
         return false;
       } else if (!getCapability().equals(ctx.getCapability())) {
         return false;
       }
-      
+
       return true;
     } else {
       return false;

@@ -53,7 +53,7 @@ public class NodeStatusPBImpl extends NodeStatus {
   private NodeHealthStatus nodeHealthStatus = null;
   private List<ApplicationId> keepAliveApplications = null;
   private List<IncreasedContainer> increasedContainers = null;
- 
+
   public NodeStatusPBImpl() {
     builder = NodeStatusProto.newBuilder();
   }

@@ -21,6 +21,7 @@ package org.apache.hadoop.yarn.api.protocolrecords;
 import org.apache.hadoop.classification.InterfaceAudience.Public;
 import org.apache.hadoop.classification.InterfaceAudience.Private;
 import org.apache.hadoop.classification.InterfaceStability.Stable;
+import org.apache.hadoop.classification.InterfaceStability.Unstable;
 import org.apache.hadoop.yarn.api.ContainerManagementProtocol;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.SerializedException;
@@ -32,18 +33,18 @@ import java.util.Map;
 /**
  * <p>
  * The response sent by the <code>NodeManager</code> to the
- * <code>ApplicationMaster</code> when asked to change container resource.
+ * <code>ApplicationMaster</code> when asked to increase container resource.
  * </p>
  *
- * @see ContainerManagementProtocol#
- *      increaseContainersResource(IncreaseContainersResourceRequest)
+ * @see ContainerManagementProtocol#increaseContainersResource(IncreaseContainersResourceRequest)
  */
 
 @Public
 @Stable
 public abstract class IncreaseContainersResourceResponse {
-  @Public
-  @Stable
+
+  @Private
+  @Unstable
   public static IncreaseContainersResourceResponse newInstance(
       List<ContainerId> successfullyIncreasedContainers,
       Map<ContainerId, SerializedException> failedRequests) {
@@ -71,7 +72,7 @@ public abstract class IncreaseContainersResourceResponse {
    * been successfully changed.
    */
   @Private
-  @Stable
+  @Unstable
   public abstract void setSuccessfullyIncreasedContainers(
           List<ContainerId> succeedIncreasedContainers);
 
@@ -88,7 +89,7 @@ public abstract class IncreaseContainersResourceResponse {
    * error from each container for failed requests.
    */
   @Private
-  @Stable
+  @Unstable
   public abstract void setFailedRequests(
       Map<ContainerId, SerializedException> failedRequests);
 }

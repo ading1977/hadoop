@@ -95,7 +95,7 @@ public class IncreasedContainerPBImpl extends IncreasedContainer {
     }
     this.targetCapability = targetCapability;
   }
-  
+
   @Override
   public Token getContainerToken() {
     IncreasedContainerProtoOrBuilder p = viaProto ? proto : builder;
@@ -117,6 +117,21 @@ public class IncreasedContainerPBImpl extends IncreasedContainer {
     this.token = token;
   }
 
+  @Override
+  public int hashCode() {
+    return getProto().hashCode();
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    if (other == null)
+      return false;
+    if (other.getClass().isAssignableFrom(this.getClass())) {
+      return this.getProto().equals(this.getClass().cast(other).getProto());
+    }
+    return false;
+  }
+
   private ContainerIdPBImpl convertFromProtoFormat(ContainerIdProto p) {
     return new ContainerIdPBImpl(p);
   }
@@ -132,7 +147,7 @@ public class IncreasedContainerPBImpl extends IncreasedContainer {
   private ResourceProto convertToProtoFormat(Resource t) {
     return ((ResourcePBImpl) t).getProto();
   }
-  
+
   private Token convertFromProtoFormat(TokenProto p) {
     return new TokenPBImpl(p);
   }

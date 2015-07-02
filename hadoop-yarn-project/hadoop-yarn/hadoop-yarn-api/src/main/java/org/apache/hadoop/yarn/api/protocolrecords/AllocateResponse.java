@@ -59,6 +59,14 @@ import org.apache.hadoop.yarn.util.Records;
  *   <li>The number of available nodes in a cluster.</li>
  *   <li>A description of resources requested back by the cluster</li>
  *   <li>AMRMToken, if AMRMToken has been rolled over</li>
+ *   <li>
+ *     A list of {@link IncreasedContainer} representing the containers
+ *     whose resource has been increased.
+ *   </li>
+ *   <li>
+ *     A list of {@link DecreasedContainer} representing the containers
+ *     whose resource has been decreased.
+ *   </li>
  * </ul>
  * 
  * @see ApplicationMasterProtocol#allocate(AllocateRequest)
@@ -263,14 +271,16 @@ public abstract class AllocateResponse {
   public abstract void setNMTokens(List<NMToken> nmTokens);
   
   /**
-   * Get the list of newly increased containers by <code>ResourceManager</code>
+   * Get the list of newly increased containers by
+   * <code>ResourceManager</code>.
    */
   @Public
   @Stable
   public abstract List<IncreasedContainer> getIncreasedContainers();
 
   /**
-   * Set the list of newly increased containers by <code>ResourceManager</code>
+   * Set the list of newly increased containers by
+   * <code>ResourceManager</code>.
    */
   @Private
   @Unstable
@@ -278,14 +288,16 @@ public abstract class AllocateResponse {
       List<IncreasedContainer> increasedContainers);
 
   /**
-   * Get the list of newly decreased containers by <code>NodeManager</code>
+   * Get the list of newly decreased containers by
+   * <code>ResourceManager</code>.
    */
   @Public
   @Stable
   public abstract List<DecreasedContainer> getDecreasedContainers();
 
   /**
-   * Set the list of newly decreased containers by <code>NodeManager</code>
+   * Set the list of newly decreased containers by
+   * <code>ResourceManager</code>.
    */
   @Private
   @Unstable

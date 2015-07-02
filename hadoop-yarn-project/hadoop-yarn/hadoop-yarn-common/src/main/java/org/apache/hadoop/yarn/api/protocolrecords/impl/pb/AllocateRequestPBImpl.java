@@ -339,32 +339,32 @@ public class AllocateRequestPBImpl extends AllocateRequest {
       return;
     }
     Iterable<ContainerResourceChangeRequestProto> iterable =
-            new Iterable<ContainerResourceChangeRequestProto>() {
+        new Iterable<ContainerResourceChangeRequestProto>() {
+          @Override
+          public Iterator<ContainerResourceChangeRequestProto> iterator() {
+            return new Iterator<ContainerResourceChangeRequestProto>() {
+
+              Iterator<ContainerResourceChangeRequest> iter =
+                      decreaseRequests.iterator();
+
               @Override
-              public Iterator<ContainerResourceChangeRequestProto> iterator() {
-                return new Iterator<ContainerResourceChangeRequestProto>() {
+              public boolean hasNext() {
+                return iter.hasNext();
+              }
 
-                  Iterator<ContainerResourceChangeRequest> iter =
-                          decreaseRequests.iterator();
+              @Override
+              public ContainerResourceChangeRequestProto next() {
+                return convertToProtoFormat(iter.next());
+              }
 
-                  @Override
-                  public boolean hasNext() {
-                    return iter.hasNext();
-                  }
-
-                  @Override
-                  public ContainerResourceChangeRequestProto next() {
-                    return convertToProtoFormat(iter.next());
-                  }
-
-                  @Override
-                  public void remove() {
-                    throw new UnsupportedOperationException();
-                  }
-                };
-
+              @Override
+              public void remove() {
+                throw new UnsupportedOperationException();
               }
             };
+
+          }
+        };
     builder.addAllDecreaseRequest(iterable);
   }
 
@@ -439,7 +439,7 @@ public class AllocateRequestPBImpl extends AllocateRequest {
   }
   
   private ContainerResourceChangeRequestPBImpl convertFromProtoFormat(
-          ContainerResourceChangeRequestProto p) {
+      ContainerResourceChangeRequestProto p) {
     return new ContainerResourceChangeRequestPBImpl(p);
   }
 

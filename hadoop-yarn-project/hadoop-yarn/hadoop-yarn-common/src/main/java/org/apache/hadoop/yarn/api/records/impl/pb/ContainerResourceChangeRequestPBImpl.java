@@ -28,9 +28,9 @@ import org.apache.hadoop.yarn.proto.YarnProtos.ResourceProto;
 
 
 public class ContainerResourceChangeRequestPBImpl extends
-        ContainerResourceChangeRequest {
+    ContainerResourceChangeRequest {
   ContainerResourceChangeRequestProto proto =
-          ContainerResourceChangeRequestProto.getDefaultInstance();
+      ContainerResourceChangeRequestProto.getDefaultInstance();
   ContainerResourceChangeRequestProto.Builder builder = null;
   boolean viaProto = false;
 
@@ -42,7 +42,7 @@ public class ContainerResourceChangeRequestPBImpl extends
   }
 
   public ContainerResourceChangeRequestPBImpl(
-          ContainerResourceChangeRequestProto proto) {
+      ContainerResourceChangeRequestProto proto) {
     this.proto = proto;
     viaProto = true;
   }
