@@ -303,7 +303,7 @@ public class TestContainerManagerRecovery extends BaseContainerManagerTest {
     // add an application by starting a container
     ApplicationId appId = ApplicationId.newInstance(0, 1);
     ApplicationAttemptId attemptId =
-            ApplicationAttemptId.newInstance(appId, 1);
+        ApplicationAttemptId.newInstance(appId, 1);
     ContainerId cid = ContainerId.newContainerId(attemptId, 1);
     Map<String, String> containerEnv = Collections.emptyMap();
     Map<String, ByteBuffer> serviceData = Collections.emptyMap();
@@ -311,10 +311,10 @@ public class TestContainerManagerRecovery extends BaseContainerManagerTest {
     DataOutputBuffer dob = new DataOutputBuffer();
     containerCreds.writeTokenStorageToStream(dob);
     ByteBuffer containerTokens = ByteBuffer.wrap(dob.getData(), 0,
-            dob.getLength());
+        dob.getLength());
     Map<ApplicationAccessType, String> acls = Collections.emptyMap();
     File tmpDir = new File("target",
-            this.getClass().getSimpleName() + "-tmpDir");
+        this.getClass().getSimpleName() + "-tmpDir");
     File scriptFile = Shell.appendScriptExtension(tmpDir, "scriptFile");
     PrintWriter fileWriter = new PrintWriter(scriptFile);
     if (Shell.WINDOWS) {
@@ -326,11 +326,10 @@ public class TestContainerManagerRecovery extends BaseContainerManagerTest {
     fileWriter.close();
     FileContext localFS = FileContext.getLocalFSFileContext();
     URL resource_alpha =
-            ConverterUtils.getYarnUrlFromPath(localFS
-                .makeQualified(new Path(scriptFile.getAbsolutePath())));
+        ConverterUtils.getYarnUrlFromPath(localFS
+            .makeQualified(new Path(scriptFile.getAbsolutePath())));
     LocalResource rsrc_alpha = RecordFactoryProvider
-                    .getRecordFactory(null)
-                    .newRecordInstance(LocalResource.class);
+        .getRecordFactory(null).newRecordInstance(LocalResource.class);
     rsrc_alpha.setResource(resource_alpha);
     rsrc_alpha.setSize(-1);
     rsrc_alpha.setVisibility(LocalResourceVisibility.APPLICATION);
@@ -340,29 +339,32 @@ public class TestContainerManagerRecovery extends BaseContainerManagerTest {
     Map<String, LocalResource> localResources = new HashMap<>();
     localResources.put(destinationFile, rsrc_alpha);
     List<String> commands =
-            Arrays.asList(Shell.getRunScriptCommand(scriptFile));
+        Arrays.asList(Shell.getRunScriptCommand(scriptFile));
     ContainerLaunchContext clc = ContainerLaunchContext.newInstance(
-            localResources, containerEnv, commands, serviceData,
-            containerTokens, acls);
+        localResources, containerEnv, commands, serviceData,
+        containerTokens, acls);
     StartContainersResponse startResponse = startContainer(
-            context, cm, cid, clc, null);
+        context, cm, cid, clc, null);
     assertTrue(startResponse.getFailedRequests().isEmpty());
     assertEquals(1, context.getApplications().size());
     Application app = context.getApplications().get(appId);
     assertNotNull(app);
     // make sure the container reaches RUNNING state
     waitForNMContainerState(cm, cid,
-            org.apache.hadoop.yarn.server.nodemanager
-                    .containermanager.container.ContainerState.RUNNING);
+        org.apache.hadoop.yarn.server.nodemanager
+            .containermanager.container.ContainerState.RUNNING);
     Resource targetResource = Resource.newInstance(2048, 2);
     IncreaseContainersResourceResponse increaseResponse =
-            increaseContainersResource(context, cm, cid, targetResource);
+        increaseContainersResource(context, cm, cid, targetResource);
     assertTrue(increaseResponse.getFailedRequests().isEmpty());
     // check status
-    final int msecSleep = YarnConfiguration
-            .DEFAULT_NM_CONTAINER_MON_INTERVAL_MS;
-    Thread.sleep(msecSleep);
     ContainerStatus containerStatus = getContainerStatus(context, cm, cid);
+    int retry = 0;
+    while (!targetResource.equals(containerStatus.getCapability()) &&
+        (retry++ < 10)) {
+      Thread.sleep(200);
+      containerStatus = getContainerStatus(context, cm, cid);
+    }
     assertEquals(targetResource, containerStatus.getCapability());
     // restart and verify container is running and recovered
     // to the correct size
