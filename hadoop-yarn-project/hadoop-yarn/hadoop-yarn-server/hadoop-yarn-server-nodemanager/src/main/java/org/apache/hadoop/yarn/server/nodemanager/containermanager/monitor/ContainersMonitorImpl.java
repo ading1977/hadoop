@@ -84,6 +84,10 @@ public class ContainersMonitorImpl extends AbstractService implements
   private int nodeCpuPercentageForYARN;
 
   private ResourceUtilization containersUtilization;
+  private final Object containersResizeMonitor = new Object();
+  private volatile boolean containersResized = false;
+
+  private volatile boolean stopped = false;
 
   public ContainersMonitorImpl(ContainerExecutor exec,
       AsyncDispatcher dispatcher, Context context) {
@@ -215,6 +219,7 @@ public class ContainersMonitorImpl extends AbstractService implements
   @Override
   protected void serviceStop() throws Exception {
     if (this.isEnabled()) {
+      stopped = true;
       this.monitoringThread.interrupt();
       try {
         this.monitoringThread.join();
@@ -383,7 +388,7 @@ public class ContainersMonitorImpl extends AbstractService implements
     @SuppressWarnings("unchecked")
     public void run() {
 
-      while (true) {
+      while (!stopped && !Thread.currentThread().isInterrupted()) {
 
         // Print the processTrees for debugging.
         if (LOG.isDebugEnabled()) {
@@ -428,19 +433,20 @@ public class ContainersMonitorImpl extends AbstractService implements
             ProcessTreeInfo info = trackingContainers.get(containerId);
             if (info == null) {
               LOG.warn("Failed to track container "
-                        + containerId.toString()
-                        + ". It may have already completed.");
+                  + containerId.toString()
+                  + ". It may have already completed.");
               continue;
             }
             info.pmemLimit = c.getPmemLimit();
             info.vmemLimit = c.getVmemLimit();
             info.cpuVcores = c.getCpuVcores();
             eventDispatcher.getEventHandler().handle(
-                    new ContainerResourceChangedEvent(containerId,
-                        Resource.newInstance((int)(info.pmemLimit >> 20),
-                                info.cpuVcores)));
+              new ContainerResourceChangedEvent(containerId,
+                  Resource.newInstance((int) (info.pmemLimit >> 20),
+                  info.cpuVcores)));
           }
           containersToBeChanged.clear();
+          containersResized = false;
         }
 
         // Temporary structure to calculate the total resource utilization of
@@ -616,7 +622,11 @@ public class ContainersMonitorImpl extends AbstractService implements
         setContainersUtilization(trackedContainersUtilization);
 
         try {
-          Thread.sleep(monitoringInterval);
+          synchronized (containersResizeMonitor) {
+            if (!containersResized) {
+              containersResizeMonitor.wait(monitoringInterval);
+            }
+          }
         } catch (InterruptedException e) {
           LOG.warn(ContainersMonitorImpl.class.getName()
               + " is interrupted. Exiting.");
@@ -700,16 +710,16 @@ public class ContainersMonitorImpl extends AbstractService implements
   public void handle(ContainersMonitorEvent monitoringEvent) {
     if (!isEnabled()) {
       if (monitoringEvent.getType() == ContainersMonitorEventType
-              .CHANGE_MONITORING_CONTAINER_RESOURCE) {
+        .CHANGE_MONITORING_CONTAINER_RESOURCE) {
         // Nothing to enforce. Send resource changed event immediately.
         ChangeMonitoringContainerResourceEvent changeEvent =
-                (ChangeMonitoringContainerResourceEvent) monitoringEvent;
+          (ChangeMonitoringContainerResourceEvent) monitoringEvent;
         eventDispatcher.getEventHandler().handle(
-                new ContainerResourceChangedEvent(
-                        changeEvent.getContainerId(),
-                        Resource.newInstance(
-                                (int)(changeEvent.getPmemLimit() >> 20),
-                                changeEvent.getCpuVcores())));
+          new ContainerResourceChangedEvent(
+              changeEvent.getContainerId(),
+              Resource.newInstance(
+              (int)(changeEvent.getPmemLimit() >> 20),
+              changeEvent.getCpuVcores())));
       }
       return;
     }
@@ -743,11 +753,15 @@ public class ContainersMonitorImpl extends AbstractService implements
       break;
     case CHANGE_MONITORING_CONTAINER_RESOURCE:
       ChangeMonitoringContainerResourceEvent changeEvent =
-              (ChangeMonitoringContainerResourceEvent) monitoringEvent;
+        (ChangeMonitoringContainerResourceEvent) monitoringEvent;
       synchronized (this.containersToBeChanged) {
         this.containersToBeChanged.add(new ContainerResourceToChange(
-                containerId, changeEvent.getVmemLimit(),
-                changeEvent.getPmemLimit(), changeEvent.getCpuVcores()));
+          containerId, changeEvent.getVmemLimit(),
+            changeEvent.getPmemLimit(), changeEvent.getCpuVcores()));
+        containersResized = true;
+      }
+      synchronized (containersResizeMonitor) {
+        containersResizeMonitor.notify();
       }
       break;
     default:
