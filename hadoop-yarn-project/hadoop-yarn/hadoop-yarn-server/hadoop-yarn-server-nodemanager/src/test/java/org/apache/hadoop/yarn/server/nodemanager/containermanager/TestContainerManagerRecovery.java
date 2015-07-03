@@ -361,7 +361,7 @@ public class TestContainerManagerRecovery extends BaseContainerManagerTest {
     ContainerStatus containerStatus = getContainerStatus(context, cm, cid);
     int retry = 0;
     while (!targetResource.equals(containerStatus.getCapability()) &&
-        (retry++ < 10)) {
+        (retry++ < 5)) {
       Thread.sleep(200);
       containerStatus = getContainerStatus(context, cm, cid);
     }

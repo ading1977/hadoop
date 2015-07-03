@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -230,7 +231,8 @@ public class ContainersMonitorImpl extends AbstractService implements
     super.serviceStop();
   }
 
-  private static class ProcessTreeInfo {
+  @VisibleForTesting
+  static class ProcessTreeInfo {
     private ContainerId containerId;
     private String pid;
     private ResourceCalculatorProcessTree pTree;
@@ -437,6 +439,7 @@ public class ContainersMonitorImpl extends AbstractService implements
                   + ". It may have already completed.");
               continue;
             }
+            LOG.info("Changing resource-monitoring for " + containerId);
             info.pmemLimit = c.getPmemLimit();
             info.vmemLimit = c.getVmemLimit();
             info.cpuVcores = c.getCpuVcores();
