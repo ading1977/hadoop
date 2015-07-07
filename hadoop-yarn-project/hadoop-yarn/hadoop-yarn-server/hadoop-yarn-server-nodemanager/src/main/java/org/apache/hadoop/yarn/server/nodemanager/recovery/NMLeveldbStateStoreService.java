@@ -236,7 +236,7 @@ public class NMLeveldbStateStoreService extends NMStateStoreService {
         rcs.exitCode = Integer.parseInt(asString(entry.getValue()));
       } else if (suffix.equals(CONTAINER_RESOURCE_CHANGED_KEY_SUFFIX)) {
         rcs.capability = new ResourcePBImpl(
-                ResourceProto.parseFrom(entry.getValue()));
+            ResourceProto.parseFrom(entry.getValue()));
       } else {
         throw new IOException("Unexpected container state key: " + key);
       }
@@ -289,7 +289,7 @@ public class NMLeveldbStateStoreService extends NMStateStoreService {
     try {
       // New value will overwrite old values for the same key
       db.put(bytes(key),
-              ((ResourcePBImpl) capability).getProto().toByteArray());
+          ((ResourcePBImpl) capability).getProto().toByteArray());
     } catch (DBException e) {
       throw new IOException(e);
     }

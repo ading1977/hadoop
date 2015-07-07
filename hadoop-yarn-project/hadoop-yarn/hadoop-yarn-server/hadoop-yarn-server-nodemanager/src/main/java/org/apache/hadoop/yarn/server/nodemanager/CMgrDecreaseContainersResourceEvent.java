@@ -18,7 +18,6 @@
 
 package org.apache.hadoop.yarn.server.nodemanager;
 
-
 import org.apache.hadoop.yarn.api.records.DecreasedContainer;
 import java.util.List;
 
@@ -27,7 +26,7 @@ public class CMgrDecreaseContainersResourceEvent extends ContainerManagerEvent {
   private final List<DecreasedContainer> containersToDecrease;
 
   public CMgrDecreaseContainersResourceEvent(List<DecreasedContainer>
-                                                     containersToDecrease) {
+      containersToDecrease) {
     super(ContainerManagerEventType.DECREASE_CONTAINERS_RESOURCE);
     this.containersToDecrease = containersToDecrease;
   }

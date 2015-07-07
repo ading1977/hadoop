@@ -180,7 +180,7 @@ public interface ContainerManagementProtocol {
    * </p>
    *
    * @param request
-   *          request to increase resource of a list of containers
+   *         request to increase resource of a list of containers
    * @return response which includes a list of containerIds of containers
    *         whose resource has been successfully increased and a
    *         containerId-to-exception map for failed requests.
@@ -189,7 +189,8 @@ public interface ContainerManagementProtocol {
    * @throws IOException
    */
   @Public
+  @Stable
   IncreaseContainersResourceResponse increaseContainersResource(
-          IncreaseContainersResourceRequest request) throws YarnException,
-          IOException;
+      IncreaseContainersResourceRequest request) throws YarnException,
+      IOException;
 }

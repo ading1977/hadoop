@@ -131,7 +131,7 @@ public class TestApplicationMasterLauncher {
 
     @Override
     public IncreaseContainersResourceResponse increaseContainersResource(
-            IncreaseContainersResourceRequest request)
+        IncreaseContainersResourceRequest request)
             throws YarnException {
       return null;
     }

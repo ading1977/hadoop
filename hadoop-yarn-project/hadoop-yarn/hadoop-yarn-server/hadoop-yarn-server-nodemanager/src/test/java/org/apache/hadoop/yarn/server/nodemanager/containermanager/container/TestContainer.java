@@ -599,12 +599,10 @@ public class TestContainer {
       wc.launchContainer();
       Resource targetResource = Resource.newInstance(2048, 2);
       wc.changeContainer(targetResource);
-      assertEquals(ContainerState.RUNNING,
-              wc.c.getContainerState());
+      assertEquals(ContainerState.RUNNING, wc.c.getContainerState());
       assertNotEquals(wc.c.getResource(), targetResource);
       wc.changedContainer(targetResource);
-      assertEquals(ContainerState.RUNNING,
-              wc.c.getContainerState());
+      assertEquals(ContainerState.RUNNING, wc.c.getContainerState());
       assertEquals(wc.c.getResource(), targetResource);
     } finally {
       if (wc != null) {

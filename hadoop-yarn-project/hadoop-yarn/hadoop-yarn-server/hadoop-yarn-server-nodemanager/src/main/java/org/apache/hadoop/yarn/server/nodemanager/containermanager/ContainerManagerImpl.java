@@ -936,12 +936,10 @@ public class ContainerManagerImpl extends CompositeService implements
    *          of the container whose resource is to be increased
    * @throws YarnException
    */
-  @Private
-  @VisibleForTesting
   private void authorizeResourceIncreaseRequest(
-          NMTokenIdentifier nmTokenIdentifier,
-          ContainerTokenIdentifier containerTokenIdentifier)
-          throws YarnException {
+      NMTokenIdentifier nmTokenIdentifier,
+      ContainerTokenIdentifier containerTokenIdentifier)
+      throws YarnException {
     if (nmTokenIdentifier == null) {
       throw RPCUtil.getRemoteException(INVALID_NMTOKEN_MSG);
     }
@@ -958,27 +956,27 @@ public class ContainerManagerImpl extends CompositeService implements
     boolean unauthorized = false;
     StringBuilder messageBuilder =
         new StringBuilder(
-                "Unauthorized request to increase container resource.");
+            "Unauthorized request to increase container resource.");
     if (!nmTokenIdentifier.getApplicationAttemptId().getApplicationId().
-          equals(containerId.getApplicationAttemptId().getApplicationId())) {
+        equals(containerId.getApplicationAttemptId().getApplicationId())) {
       unauthorized = true;
       messageBuilder
-              .append("\nNMToken for application attempt : ")
-              .append(nmTokenIdentifier.getApplicationAttemptId())
-              .append(" was used for changing resource of container that")
-              .append(" belongs to application attempt : ")
-              .append(containerId.getApplicationAttemptId());
+          .append("\nNMToken for application attempt : ")
+          .append(nmTokenIdentifier.getApplicationAttemptId())
+          .append(" was used for changing resource of container that")
+          .append(" belongs to application attempt : ")
+          .append(containerId.getApplicationAttemptId());
     } else if (containerTokenIdentifier.getExpiryTimeStamp() < System
-            .currentTimeMillis()) {
+        .currentTimeMillis()) {
       // Ensure the token is not expired.
       unauthorized = true;
       messageBuilder
-              .append("\nThis token is expired. current time is ")
-              .append(System.currentTimeMillis()).append(" found ")
-              .append(containerTokenIdentifier.getExpiryTimeStamp());
+          .append("\nThis token is expired. current time is ")
+          .append(System.currentTimeMillis()).append(" found ")
+          .append(containerTokenIdentifier.getExpiryTimeStamp());
       messageBuilder
-              .append("\nNote: System times on machines may be out of sync.")
-              .append(" Check system time and time zones.");
+          .append("\nNote: System times on machines may be out of sync.")
+          .append(" Check system time and time zones.");
     }
     if (unauthorized) {
       String msg = messageBuilder.toString();
@@ -986,11 +984,11 @@ public class ContainerManagerImpl extends CompositeService implements
       throw RPCUtil.getRemoteException(msg);
     }
     if (containerTokenIdentifier.getRMIdentifier() != nodeStatusUpdater
-            .getRMIdentifier()) {
+        .getRMIdentifier()) {
       // Is the container coming from unknown RM
       StringBuilder sb = new StringBuilder("\nContainer ");
       sb.append(containerTokenIdentifier.getContainerID().toString())
-              .append(" rejected as it is allocated by a previous RM");
+        .append(" rejected as it is allocated by a previous RM");
       throw new InvalidContainerException(sb.toString());
     }
   }
@@ -1000,33 +998,33 @@ public class ContainerManagerImpl extends CompositeService implements
    */
   @Override
   public IncreaseContainersResourceResponse increaseContainersResource(
-              IncreaseContainersResourceRequest requests)
-              throws YarnException, IOException {
+      IncreaseContainersResourceRequest requests)
+          throws YarnException, IOException {
     if (blockNewContainerRequests.get()) {
       throw new NMNotYetReadyException(
-              "Rejecting container resource increase as NodeManager has not"
-                      + " yet connected with ResourceManager");
+          "Rejecting container resource increase as NodeManager has not"
+              + " yet connected with ResourceManager");
     }
     UserGroupInformation remoteUgi = getRemoteUgi();
     NMTokenIdentifier nmTokenIdentifier = selectNMTokenIdentifier(remoteUgi);
     authorizeUser(remoteUgi, nmTokenIdentifier);
     List<ContainerId> successfullyIncreasedContainers = new ArrayList<ContainerId>();
     Map<ContainerId, SerializedException> failedContainers =
-            new HashMap<ContainerId, SerializedException>();
+        new HashMap<ContainerId, SerializedException>();
     // Process container resource increase requests
     for (org.apache.hadoop.yarn.api.records.Token token :
-            requests.getContainersToIncrease()) {
+        requests.getContainersToIncrease()) {
       ContainerId containerId = null;
       try {
         if (token.getIdentifier() == null) {
           throw new IOException(INVALID_CONTAINERTOKEN_MSG);
         }
         ContainerTokenIdentifier containerTokenIdentifier =
-                BuilderUtils.newContainerTokenIdentifier(token);
+            BuilderUtils.newContainerTokenIdentifier(token);
         verifyAndGetContainerTokenIdentifier(token,
-                containerTokenIdentifier);
+            containerTokenIdentifier);
         authorizeResourceIncreaseRequest(nmTokenIdentifier,
-                containerTokenIdentifier);
+            containerTokenIdentifier);
         containerId = containerTokenIdentifier.getContainerID();
         // Reuse the startContainer logic to update NMToken,
         // as container resource increase request will have come with
@@ -1042,31 +1040,30 @@ public class ContainerManagerImpl extends CompositeService implements
       }
     }
     return IncreaseContainersResourceResponse.newInstance(
-            successfullyIncreasedContainers, failedContainers);
+        successfullyIncreasedContainers, failedContainers);
   }
 
   @SuppressWarnings("unchecked")
   private synchronized void changeContainerResourceInternal(
-          ContainerId containerId, Resource targetResource,
-          boolean increase)
+      ContainerId containerId, Resource targetResource, boolean increase)
           throws YarnException, IOException {
     Container container = context.getContainers().get(containerId);
     // Check container existence
     if (container == null) {
       if (nodeStatusUpdater.isContainerRecentlyStopped(containerId)) {
         throw RPCUtil.getRemoteException("Container " + containerId.toString()
-                + " was recently stopped on node manager.");
+            + " was recently stopped on node manager.");
       } else {
         throw RPCUtil.getRemoteException("Container " + containerId.toString()
-                + " is not handled by this NodeManager");
+            + " is not handled by this NodeManager");
       }
     }
     // Check container state
     org.apache.hadoop.yarn.server.nodemanager.
         containermanager.container.ContainerState currentState =
-            container.getContainerState();
+        container.getContainerState();
     if (currentState != org.apache.hadoop.yarn.server.
-            nodemanager.containermanager.container.ContainerState.RUNNING) {
+        nodemanager.containermanager.container.ContainerState.RUNNING) {
       throw RPCUtil.getRemoteException("Container " + containerId.toString()
           + " is in " + currentState.name() + " state."
           + " Resource can only be changed when a container is in"
@@ -1076,42 +1073,42 @@ public class ContainerManagerImpl extends CompositeService implements
     Resource currentResource = container.getResource();
     if (currentResource.equals(targetResource)) {
       LOG.warn("Unable to change resource for container "
-              + containerId.toString()
-              + ". The target resource "
-              + targetResource.toString()
-              + " is the same as the current resource");
+          + containerId.toString()
+          + ". The target resource "
+          + targetResource.toString()
+          + " is the same as the current resource");
       return;
     }
     if (increase && !Resources.fitsIn(currentResource, targetResource)) {
       throw RPCUtil.getRemoteException("Unable to increase resource for "
-              + "container " + containerId.toString()
-              + ". The target resource "
-              + targetResource.toString()
-              + " is smaller than the current resource "
-              + currentResource.toString());
+          + "container " + containerId.toString()
+          + ". The target resource "
+          + targetResource.toString()
+          + " is smaller than the current resource "
+          + currentResource.toString());
     }
     if (!increase &&
-            (!Resources.fitsIn(Resources.none(), targetResource)
-             || !Resources.fitsIn(targetResource, currentResource))) {
+           (!Resources.fitsIn(Resources.none(), targetResource)
+               || !Resources.fitsIn(targetResource, currentResource))) {
       throw RPCUtil.getRemoteException("Unable to decrease resource for "
-              + "container " + containerId.toString()
-              + ". The target resource "
-              + targetResource.toString()
-              + " is not smaller than the current resource "
-              + currentResource.toString());
+          + "container " + containerId.toString()
+          + ". The target resource "
+          + targetResource.toString()
+          + " is not smaller than the current resource "
+          + currentResource.toString());
     }
     this.readLock.lock();
     try {
       if (!serviceStopped) {
         // Persist container resource change for recovery
         this.context.getNMStateStore().storeContainerResourceChanged(
-                containerId, targetResource);
+            containerId, targetResource);
         dispatcher.getEventHandler().handle(new ChangeContainerResourceEvent(
-                containerId, targetResource));
+            containerId, targetResource));
       } else {
         throw new YarnException(
-                "Unable to change container resource as the NodeManager is " +
-                        "in the process of shutting down");
+            "Unable to change container resource as the NodeManager is "
+                + "in the process of shutting down");
       }
     } finally {
       this.readLock.unlock();
@@ -1363,7 +1360,7 @@ public class ContainerManagerImpl extends CompositeService implements
           .getContainersToDecrease()) {
         try {
           changeContainerResourceInternal(container.getContainerId(),
-                  container.getCapability(), false);
+              container.getCapability(), false);
         } catch (YarnException e) {
           LOG.error("Unable to decrease container resource", e);
         } catch (IOException e) {

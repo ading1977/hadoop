@@ -350,7 +350,9 @@ public class NodeStatusPBImpl extends NodeStatus {
     }
     this.builder
         .setContainersUtilization(convertToProtoFormat(containersUtilization));
+  }
 
+  @Override
   public synchronized List<IncreasedContainer> getIncreasedContainers() {
     if (increasedContainers != null) {
       return increasedContainers;
@@ -412,12 +414,15 @@ public class NodeStatusPBImpl extends NodeStatus {
   private ResourceUtilizationPBImpl convertFromProtoFormat(
       ResourceUtilizationProto p) {
     return new ResourceUtilizationPBImpl(p);
+  }
 
-  private IncreasedContainerPBImpl convertFromProtoFormat(IncreasedContainerProto c) {
+  private IncreasedContainerPBImpl convertFromProtoFormat(
+      IncreasedContainerProto c) {
     return new IncreasedContainerPBImpl(c);
   }
 
-  private IncreasedContainerProto convertToProtoFormat(IncreasedContainer c) {
+  private IncreasedContainerProto convertToProtoFormat(
+      IncreasedContainer c) {
     return ((IncreasedContainerPBImpl)c).getProto();
   }
 }

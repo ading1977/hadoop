@@ -26,9 +26,9 @@ public class ChangeMonitoringContainerResourceEvent extends ContainersMonitorEve
   private final int cpuVcores;
 
   public ChangeMonitoringContainerResourceEvent(ContainerId containerId,
-                                                long vmemLimit, long pmemLimit,
-                                                int cpuVcores) {
-    super(containerId, ContainersMonitorEventType.CHANGE_MONITORING_CONTAINER_RESOURCE);
+      long vmemLimit, long pmemLimit, int cpuVcores) {
+    super(containerId,
+        ContainersMonitorEventType.CHANGE_MONITORING_CONTAINER_RESOURCE);
     this.vmemLimit = vmemLimit;
     this.pmemLimit = pmemLimit;
     this.cpuVcores = cpuVcores;

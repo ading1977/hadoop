@@ -46,6 +46,16 @@ import org.apache.hadoop.yarn.util.Records;
  *   <li>
  *     A list of unused {@link Container} which are being returned.
  *   </li>
+ *   <li>
+ *     A list of {@link ContainerResourceChangeRequest} to inform
+ *     the <code>ResourceManager</code> about the resource increase
+ *     requirements of running containers.
+ *   </li>
+ *   <li>
+ *     A list of {@link ContainerResourceChangeRequest} to inform
+ *     the <code>ResourceManager</code> about the resource decrease
+ *     requirements of running containers.
+ *   </li>
  * </ul>
  * 
  * @see ApplicationMasterProtocol#allocate(AllocateRequest)

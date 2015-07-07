@@ -38,7 +38,7 @@ public abstract class IncreaseContainersResourceRequest {
   @Public
   @Stable
   public static IncreaseContainersResourceRequest newInstance(
-          List<Token> containersToIncrease) {
+      List<Token> containersToIncrease) {
     IncreaseContainersResourceRequest request =
         Records.newRecord(IncreaseContainersResourceRequest.class);
     request.setContainersToIncrease(containersToIncrease);
@@ -54,7 +54,6 @@ public abstract class IncreaseContainersResourceRequest {
    * @return the list of container tokens to be used for authorization during
    * container resource increase.
    * @see NMToken
-   *
    */
   @Public
   @Stable

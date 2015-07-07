@@ -454,10 +454,10 @@ public class TestContainerLauncher {
 
     @Override
     public IncreaseContainersResourceResponse increaseContainersResource(
-            IncreaseContainersResourceRequest request) throws IOException,
-            IOException {
+        IncreaseContainersResourceRequest request) throws IOException,
+        IOException {
       Exception e = new Exception("Dummy function", new Exception(
-              "Dummy function cause"));
+          "Dummy function cause"));
       throw new IOException(e);
     }
   }

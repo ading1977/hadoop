@@ -136,13 +136,13 @@ public class ContainerManagementProtocolPBClientImpl implements ContainerManagem
 
   @Override
   public IncreaseContainersResourceResponse increaseContainersResource(
-          IncreaseContainersResourceRequest request) throws YarnException,
-          IOException {
+      IncreaseContainersResourceRequest request) throws YarnException,
+      IOException {
     IncreaseContainersResourceRequestProto requestProto =
-            ((IncreaseContainersResourceRequestPBImpl)request).getProto();
+        ((IncreaseContainersResourceRequestPBImpl)request).getProto();
     try {
       return new IncreaseContainersResourceResponsePBImpl(
-              proxy.increaseContainersResource(null, requestProto));
+          proxy.increaseContainersResource(null, requestProto));
     } catch (ServiceException e) {
       RPCUtil.unwrapAndThrowException(e);
       return null;

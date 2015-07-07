@@ -165,7 +165,7 @@ public class ContainerImpl implements Container {
         && !this.resource.equals(recoveredCapability)) {
       // resource capability had been updated before NM was down
       this.resource = Resource.newInstance(recoveredCapability.getMemory(),
-              recoveredCapability.getVirtualCores());
+          recoveredCapability.getVirtualCores());
     }
   }
 
@@ -467,7 +467,7 @@ public class ContainerImpl implements Container {
     this.readLock.lock();
     try {
       return Resource.newInstance(this.resource.getMemory(),
-              this.resource.getVirtualCores());
+          this.resource.getVirtualCores());
     } finally {
       this.readLock.unlock();
     }
@@ -536,13 +536,13 @@ public class ContainerImpl implements Container {
   private void sendChangeMonitorContainerResourceEvent(Resource target) {
     long pmemBytes = target.getMemory() * 1024 * 1024L;
     float pmemRatio = daemonConf.getFloat(
-            YarnConfiguration.NM_VMEM_PMEM_RATIO,
-            YarnConfiguration.DEFAULT_NM_VMEM_PMEM_RATIO);
+        YarnConfiguration.NM_VMEM_PMEM_RATIO,
+        YarnConfiguration.DEFAULT_NM_VMEM_PMEM_RATIO);
     long vmemBytes = (long) (pmemRatio * pmemBytes);
     int cpuVcores = target.getVirtualCores();
     dispatcher.getEventHandler().handle(
         new ChangeMonitoringContainerResourceEvent(containerId,
-                vmemBytes, pmemBytes, cpuVcores));
+            vmemBytes, pmemBytes, cpuVcores));
   }
 
   private void addDiagnostics(String... diags) {
@@ -826,7 +826,7 @@ public class ContainerImpl implements Container {
       Resource currentResource = container.getResource();
       Resource targetResource = changedEvent.getResource();
       container.resource = Resource.newInstance(targetResource.getMemory(),
-              targetResource.getVirtualCores());
+          targetResource.getVirtualCores());
       container.metrics.changeContainer(currentResource, targetResource);
     }
   }

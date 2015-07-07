@@ -42,9 +42,9 @@ import com.google.protobuf.TextFormat;
 @Private
 @Unstable
 public class IncreaseContainersResourceResponsePBImpl extends
-        IncreaseContainersResourceResponse {
+    IncreaseContainersResourceResponse {
   IncreaseContainersResourceResponseProto proto =
-          IncreaseContainersResourceResponseProto.getDefaultInstance();
+      IncreaseContainersResourceResponseProto.getDefaultInstance();
   IncreaseContainersResourceResponseProto.Builder builder = null;
   boolean viaProto = false;
   private List<ContainerId> succeededRequests = null;
@@ -55,7 +55,7 @@ public class IncreaseContainersResourceResponsePBImpl extends
   }
 
   public IncreaseContainersResourceResponsePBImpl(
-          IncreaseContainersResourceResponseProto proto) {
+      IncreaseContainersResourceResponseProto proto) {
     this.proto = proto;
     viaProto = true;
   }
@@ -121,7 +121,7 @@ public class IncreaseContainersResourceResponsePBImpl extends
 
   @Override
   public void setSuccessfullyIncreasedContainers(
-          List<ContainerId> succeededRequests) {
+      List<ContainerId> succeededRequests) {
     maybeInitBuilder();
     if (succeededRequests == null) {
       builder.clearSucceededRequests();
@@ -134,7 +134,7 @@ public class IncreaseContainersResourceResponsePBImpl extends
       return;
     }
     IncreaseContainersResourceResponseProtoOrBuilder p =
-            viaProto ? proto : builder;
+        viaProto ? proto : builder;
     List<ContainerIdProto> list = p.getSucceededRequestsList();
     this.succeededRequests = new ArrayList<ContainerId>();
     for (ContainerIdProto c : list) {
@@ -182,7 +182,7 @@ public class IncreaseContainersResourceResponsePBImpl extends
 
   @Override
   public void setFailedRequests(
-          Map<ContainerId, SerializedException> failedRequests) {
+      Map<ContainerId, SerializedException> failedRequests) {
     maybeInitBuilder();
     if (failedRequests == null) {
       builder.clearFailedRequests();
@@ -195,12 +195,12 @@ public class IncreaseContainersResourceResponsePBImpl extends
       return;
     }
     IncreaseContainersResourceResponseProtoOrBuilder
-            p = viaProto ? proto : builder;
+        p = viaProto ? proto : builder;
     List<ContainerExceptionMapProto> protoList = p.getFailedRequestsList();
     this.failedRequests = new HashMap<ContainerId, SerializedException>();
     for (ContainerExceptionMapProto ce : protoList) {
       this.failedRequests.put(convertFromProtoFormat(ce.getContainerId()),
-              convertFromProtoFormat(ce.getException()));
+          convertFromProtoFormat(ce.getException()));
     }
   }
 
@@ -211,13 +211,13 @@ public class IncreaseContainersResourceResponsePBImpl extends
       return;
     }
     List<ContainerExceptionMapProto> protoList =
-            new ArrayList<ContainerExceptionMapProto>();
+        new ArrayList<ContainerExceptionMapProto>();
 
     for (Map.Entry<ContainerId, SerializedException> entry : this.failedRequests
-            .entrySet()) {
+        .entrySet()) {
       protoList.add(ContainerExceptionMapProto.newBuilder()
-              .setContainerId(convertToProtoFormat(entry.getKey()))
-              .setException(convertToProtoFormat(entry.getValue())).build());
+          .setContainerId(convertToProtoFormat(entry.getKey()))
+          .setException(convertToProtoFormat(entry.getValue())).build());
     }
     builder.addAllFailedRequests(protoList);
   }

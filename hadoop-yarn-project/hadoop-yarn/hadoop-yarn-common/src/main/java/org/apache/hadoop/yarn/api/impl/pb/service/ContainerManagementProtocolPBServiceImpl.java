@@ -102,13 +102,13 @@ public class ContainerManagementProtocolPBServiceImpl implements ContainerManage
 
   @Override
   public IncreaseContainersResourceResponseProto increaseContainersResource(
-          RpcController controller, IncreaseContainersResourceRequestProto proto)
-          throws ServiceException {
+      RpcController controller, IncreaseContainersResourceRequestProto proto)
+      throws ServiceException {
     IncreaseContainersResourceRequestPBImpl request =
-            new IncreaseContainersResourceRequestPBImpl(proto);
+        new IncreaseContainersResourceRequestPBImpl(proto);
     try {
       IncreaseContainersResourceResponse response =
-              real.increaseContainersResource(request);
+          real.increaseContainersResource(request);
       return ((IncreaseContainersResourceResponsePBImpl)response).getProto();
     } catch (YarnException e) {
       throw new ServiceException(e);

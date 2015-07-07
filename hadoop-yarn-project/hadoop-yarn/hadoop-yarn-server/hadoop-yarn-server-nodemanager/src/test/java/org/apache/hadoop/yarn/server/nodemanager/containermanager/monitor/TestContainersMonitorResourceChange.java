@@ -49,45 +49,39 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
 
 public class TestContainersMonitorResourceChange {
-  ContainersMonitorImpl containersMonitor;
-  MockExecutor executor;
-  Configuration conf;
-  AsyncDispatcher dispatcher;
-  MockContainerEventHandler containerEventHandler;
 
-  static class MockExecutor extends ContainerExecutor {
+  private ContainersMonitorImpl containersMonitor;
+  private MockExecutor executor;
+  private Configuration conf;
+  private AsyncDispatcher dispatcher;
+  private MockContainerEventHandler containerEventHandler;
 
+  private static class MockExecutor extends ContainerExecutor {
     @Override
     public void init() throws IOException {
     }
-
     @Override
     public void startLocalizer(LocalizerStartContext ctx)
         throws IOException, InterruptedException {
     }
-
     @Override
     public int launchContainer(ContainerStartContext ctx) throws
         IOException {
       return 0;
     }
-
     @Override
     public boolean signalContainer(ContainerSignalContext ctx)
         throws IOException {
       return true;
     }
-
     @Override
     public void deleteAsUser(DeletionAsUserContext ctx)
         throws IOException, InterruptedException {
     }
-
     @Override
     public String getProcessId(ContainerId containerId) {
       return String.valueOf(containerId.getContainerId());
     }
-
     @Override
     public boolean isContainerProcessAlive(ContainerLivenessContext ctx)
         throws IOException {
@@ -95,12 +89,10 @@ public class TestContainersMonitorResourceChange {
     }
   }
 
-  static class MockContainerEventHandler implements
+  private static class MockContainerEventHandler implements
       EventHandler<ContainerEvent> {
-
     final private Set<ContainerId> killedContainer
         = new HashSet<>();
-
     @Override
     public void handle(ContainerEvent event) {
       if (event.getType() == ContainerEventType.KILL_CONTAINER) {
@@ -109,7 +101,6 @@ public class TestContainersMonitorResourceChange {
         }
       }
     }
-
     public boolean isContainerKilled(ContainerId containerId) {
       synchronized (killedContainer) {
         return killedContainer.contains(containerId);
@@ -135,11 +126,12 @@ public class TestContainersMonitorResourceChange {
   }
 
   @After
-  public void finalize() {
-    try {
+  public void tearDown() throws Exception {
+    if (containersMonitor != null) {
+      containersMonitor.stop();
+    }
+    if (dispatcher != null) {
       dispatcher.stop();
-    } catch (Exception e) {
-      // do nothing
     }
   }
 

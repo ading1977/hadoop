@@ -38,7 +38,6 @@ import java.util.Map;
  *
  * @see ContainerManagementProtocol#increaseContainersResource(IncreaseContainersResourceRequest)
  */
-
 @Public
 @Stable
 public abstract class IncreaseContainersResourceResponse {
@@ -51,17 +50,17 @@ public abstract class IncreaseContainersResourceResponse {
     IncreaseContainersResourceResponse response =
         Records.newRecord(IncreaseContainersResourceResponse.class);
     response.setSuccessfullyIncreasedContainers(
-            successfullyIncreasedContainers);
+        successfullyIncreasedContainers);
     response.setFailedRequests(failedRequests);
     return response;
   }
 
   /**
    * Get the list of containerIds of containers whose resource
-   * have been successfully changed.
+   * have been successfully increased.
    *
    * @return the list of containerIds of containers whose resource have
-   * been successfully.
+   * been successfully increased.
    */
   @Public
   @Stable
@@ -69,12 +68,12 @@ public abstract class IncreaseContainersResourceResponse {
 
   /**
    * Set the list of containerIds of containers whose resource have
-   * been successfully changed.
+   * been successfully increased.
    */
   @Private
   @Unstable
   public abstract void setSuccessfullyIncreasedContainers(
-          List<ContainerId> succeedIncreasedContainers);
+      List<ContainerId> succeedIncreasedContainers);
 
   /**
    * Get the containerId-to-exception map in which the exception indicates

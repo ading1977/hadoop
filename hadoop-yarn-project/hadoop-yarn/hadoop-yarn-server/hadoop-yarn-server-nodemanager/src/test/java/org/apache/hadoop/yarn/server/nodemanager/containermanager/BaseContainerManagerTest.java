@@ -312,33 +312,33 @@ public abstract class BaseContainerManagerTest {
   }
 
   public static void waitForNMContainerState(ContainerManagerImpl
-        containerManager, ContainerId containerID,
-        org.apache.hadoop.yarn.server.nodemanager.containermanager
-                .container.ContainerState finalState)
-        throws InterruptedException, YarnException, IOException {
+      containerManager, ContainerId containerID,
+          org.apache.hadoop.yarn.server.nodemanager.containermanager
+              .container.ContainerState finalState)
+                  throws InterruptedException, YarnException, IOException {
     waitForNMContainerState(containerManager, containerID, finalState, 20);
   }
 
   public static void waitForNMContainerState(ContainerManagerImpl
-        containerManager, ContainerId containerID,
-        org.apache.hadoop.yarn.server.nodemanager.containermanager
-                .container.ContainerState finalState, int timeOutMax)
-        throws InterruptedException, YarnException, IOException {
+      containerManager, ContainerId containerID,
+          org.apache.hadoop.yarn.server.nodemanager.containermanager
+          .container.ContainerState finalState, int timeOutMax)
+              throws InterruptedException, YarnException, IOException {
     Container container =
-            containerManager.getContext().getContainers().get(containerID);
-    org.apache.hadoop.yarn.server.nodemanager.
-            containermanager.container.ContainerState currentState =
+        containerManager.getContext().getContainers().get(containerID);
+    org.apache.hadoop.yarn.server.nodemanager
+        .containermanager.container.ContainerState currentState =
             container.getContainerState();
     int timeoutSecs = 0;
     while (!currentState.equals(finalState)
-            && timeoutSecs++ < timeOutMax) {
+        && timeoutSecs++ < timeOutMax) {
       Thread.sleep(1000);
       LOG.info("Waiting for NM container to get into state " + finalState
-              + ". Current state is " + currentState);
+          + ". Current state is " + currentState);
       currentState = container.getContainerState();
     }
     LOG.info("Container state is " + currentState);
     Assert.assertEquals("ContainerState is not correct (timedout)",
-            finalState, currentState);
+        finalState, currentState);
   }
 }

@@ -299,8 +299,8 @@ public class NodeManager implements ContainerManagementProtocol {
 
   @Override
   public IncreaseContainersResourceResponse increaseContainersResource(
-          IncreaseContainersResourceRequest request) throws YarnException,
-          IOException {
+      IncreaseContainersResourceRequest request)
+          throws YarnException, IOException {
     return null;
   }
 

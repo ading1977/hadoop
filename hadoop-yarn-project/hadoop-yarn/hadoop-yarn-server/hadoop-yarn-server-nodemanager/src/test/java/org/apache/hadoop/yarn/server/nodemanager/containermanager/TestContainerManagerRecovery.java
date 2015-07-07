@@ -137,7 +137,7 @@ public class TestContainerManagerRecovery extends BaseContainerManagerTest {
     exec = createContainerExecutor();
     dirsHandler = new LocalDirsHandlerService();
     nodeHealthChecker = new NodeHealthCheckerService(
-            NodeManager.getNodeHealthScriptRunner(conf), dirsHandler);
+        NodeManager.getNodeHealthScriptRunner(conf), dirsHandler);
     nodeHealthChecker.init(conf);
   }
 
@@ -394,11 +394,11 @@ public class TestContainerManagerRecovery extends BaseContainerManagerTest {
     DataOutputBuffer dob = new DataOutputBuffer();
     containerCreds.writeTokenStorageToStream(dob);
     ByteBuffer containerTokens = ByteBuffer.wrap(dob.getData(), 0,
-            dob.getLength());
+        dob.getLength());
     Map<ApplicationAccessType, String> acls = Collections.emptyMap();
     ContainerLaunchContext clc = ContainerLaunchContext.newInstance(
-            localResources, containerEnv, containerCmds, serviceData,
-            containerTokens, acls);
+        localResources, containerEnv, containerCmds, serviceData,
+        containerTokens, acls);
     // create the logAggregationContext
     LogAggregationContext logAggregationContext =
         LogAggregationContext.newInstance("includePattern", "excludePattern");
@@ -411,7 +411,7 @@ public class TestContainerManagerRecovery extends BaseContainerManagerTest {
     cm.init(conf);
     cm.start();
     StartContainersResponse startResponse = startContainer(context, cm, cid,
-            clc, logAggregationContext);
+        clc, logAggregationContext);
     assertEquals(1, startResponse.getSuccessfullyStartedContainers().size());
     cm.stop();
     verify(cm).handle(isA(CMgrCompletedAppsEvent.class));
@@ -452,21 +452,20 @@ public class TestContainerManagerRecovery extends BaseContainerManagerTest {
   }
 
   private ContainerManagerImpl createContainerManager(Context context,
-          DeletionService delSrvc) {
+      DeletionService delSrvc) {
     return new ContainerManagerImpl(context, exec, delSrvc,
-            mock(NodeStatusUpdater.class), metrics,
-            new ApplicationACLsManager(conf), dirsHandler) {
+        mock(NodeStatusUpdater.class), metrics,
+        new ApplicationACLsManager(conf), dirsHandler) {
       @Override
       public void
       setBlockNewContainerRequests(boolean blockNewContainerRequests) {
         // do nothing
       }
-
       @Override
       protected void authorizeGetAndStopContainerRequest(
-              ContainerId containerId, Container container,
-              boolean stopRequest, NMTokenIdentifier identifier)
-              throws YarnException {
+          ContainerId containerId, Container container,
+          boolean stopRequest, NMTokenIdentifier identifier)
+          throws YarnException {
         if(container == null || container.getUser().equals("Fail")){
           throw new YarnException("Reject this container");
         }
@@ -522,25 +521,22 @@ public class TestContainerManagerRecovery extends BaseContainerManagerTest {
 
   private IncreaseContainersResourceResponse increaseContainersResource(
       Context context, final ContainerManagerImpl cm, ContainerId cid,
-      Resource capability)
-          throws Exception {
+      Resource capability) throws Exception {
     UserGroupInformation user = UserGroupInformation.createRemoteUser(
-            cid.getApplicationAttemptId().toString());
+        cid.getApplicationAttemptId().toString());
     // construct container resource increase request
     final List<Token> increaseTokens = new ArrayList<Token>();
     // add increase request
     Token containerToken = TestContainerManager.createContainerToken(
-            cid, 0,
-            context.getNodeId(), user.getShortUserName(),
-            capability, context.getContainerTokenSecretManager(), null);
+        cid, 0, context.getNodeId(), user.getShortUserName(),
+        capability, context.getContainerTokenSecretManager(), null);
     increaseTokens.add(containerToken);
     final IncreaseContainersResourceRequest increaseRequest =
-            IncreaseContainersResourceRequest
-                    .newInstance(increaseTokens);
+        IncreaseContainersResourceRequest.newInstance(increaseTokens);
     NMTokenIdentifier nmToken = new NMTokenIdentifier(
-            cid.getApplicationAttemptId(), context.getNodeId(),
-            user.getShortUserName(),
-            context.getNMTokenSecretManager().getCurrentKey().getKeyId());
+        cid.getApplicationAttemptId(), context.getNodeId(),
+        user.getShortUserName(),
+        context.getNMTokenSecretManager().getCurrentKey().getKeyId());
     user.addTokenIdentifier(nmToken);
     return user.doAs(
         new PrivilegedExceptionAction<IncreaseContainersResourceResponse>() {
@@ -552,25 +548,25 @@ public class TestContainerManagerRecovery extends BaseContainerManagerTest {
   }
 
   private ContainerStatus getContainerStatus(
-          Context context, final ContainerManagerImpl cm,
-          ContainerId cid) throws  Exception {
+      Context context, final ContainerManagerImpl cm, ContainerId cid)
+      throws  Exception {
     UserGroupInformation user = UserGroupInformation.createRemoteUser(
-            cid.getApplicationAttemptId().toString());
+        cid.getApplicationAttemptId().toString());
     NMTokenIdentifier nmToken = new NMTokenIdentifier(
-            cid.getApplicationAttemptId(), context.getNodeId(),
-            user.getShortUserName(),
-            context.getNMTokenSecretManager().getCurrentKey().getKeyId());
+        cid.getApplicationAttemptId(), context.getNodeId(),
+        user.getShortUserName(),
+        context.getNMTokenSecretManager().getCurrentKey().getKeyId());
     user.addTokenIdentifier(nmToken);
     List<ContainerId> containerIds = new ArrayList<>();
     containerIds.add(cid);
     final GetContainerStatusesRequest gcsRequest =
-            GetContainerStatusesRequest.newInstance(containerIds);
+        GetContainerStatusesRequest.newInstance(containerIds);
     return user.doAs(
         new PrivilegedExceptionAction<ContainerStatus>() {
           @Override
           public ContainerStatus run() throws Exception {
             return cm.getContainerStatuses(gcsRequest)
-                    .getContainerStatuses().get(0);
+                .getContainerStatuses().get(0);
           }
         });
   }

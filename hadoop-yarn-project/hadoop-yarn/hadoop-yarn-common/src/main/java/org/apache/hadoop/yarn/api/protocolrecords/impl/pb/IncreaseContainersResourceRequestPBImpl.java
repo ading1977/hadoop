@@ -36,9 +36,9 @@ import com.google.protobuf.TextFormat;
 @Private
 @Unstable
 public class IncreaseContainersResourceRequestPBImpl extends
-        IncreaseContainersResourceRequest {
+    IncreaseContainersResourceRequest {
   IncreaseContainersResourceRequestProto proto =
-          IncreaseContainersResourceRequestProto.getDefaultInstance();
+      IncreaseContainersResourceRequestProto.getDefaultInstance();
   IncreaseContainersResourceRequestProto.Builder builder = null;
   boolean viaProto = false;
 
@@ -49,7 +49,7 @@ public class IncreaseContainersResourceRequestPBImpl extends
   }
 
   public IncreaseContainersResourceRequestPBImpl(
-          IncreaseContainersResourceRequestProto proto) {
+      IncreaseContainersResourceRequestProto proto) {
     this.proto = proto;
     viaProto = true;
   }
@@ -125,7 +125,7 @@ public class IncreaseContainersResourceRequestPBImpl extends
       return;
     }
     IncreaseContainersResourceRequestProtoOrBuilder p =
-            viaProto ? proto : builder;
+        viaProto ? proto : builder;
     List<TokenProto> list = p.getIncreaseContainersList();
     this.containersToIncrease = new ArrayList<Token>();
 

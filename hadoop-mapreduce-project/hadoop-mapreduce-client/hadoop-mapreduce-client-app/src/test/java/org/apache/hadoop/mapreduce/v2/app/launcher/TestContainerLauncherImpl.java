@@ -457,8 +457,8 @@ public class TestContainerLauncherImpl {
 
     @Override
     public IncreaseContainersResourceResponse increaseContainersResource(
-            IncreaseContainersResourceRequest request) throws YarnException,
-            IOException {
+        IncreaseContainersResourceRequest request) throws YarnException,
+        IOException {
       return null;
     }
 
