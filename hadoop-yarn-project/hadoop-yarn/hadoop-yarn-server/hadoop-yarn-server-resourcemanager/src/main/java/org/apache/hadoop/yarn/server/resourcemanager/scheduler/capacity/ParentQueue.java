@@ -346,9 +346,9 @@ public class ParentQueue extends AbstractCSQueue {
     ++numApplications;
 
     LOG.info("Application added -" +
-        " appId: " + applicationId + 
-        " user: " + user + 
-        " leaf-queue of parent: " + getQueueName() + 
+        " appId: " + applicationId +
+        " user: " + user +
+        " leaf-queue of parent: " + getQueueName() +
         " #applications: " + getNumApplications());
   }
   
@@ -612,10 +612,28 @@ public class ParentQueue extends AbstractCSQueue {
   private void printChildQueues() {
     if (LOG.isDebugEnabled()) {
       LOG.debug("printChildQueues - queue: " + getQueuePath()
-        + " child-queues: " + getChildQueuesToPrint());
+          + " child-queues: " + getChildQueuesToPrint());
     }
   }
-  
+
+  @Override
+  public void decreasedContainer(Resource clusterResource,
+      FiCaSchedulerApp application, FiCaSchedulerNode node,
+      RMContainer container, Resource resourceDecreased, CSQueue childQueue) {
+    if (application == null) {
+      return;
+    }
+    synchronized (this) {
+      super.decreaseResource(clusterResource, resourceDecreased,
+          node.getPartition());
+      // Do we need to sort queue here?
+    }
+    if (parent != null) {
+      parent.decreasedContainer(clusterResource, application, node,
+          container, resourceDecreased, childQueue);
+    }
+  }
+
   @Override
   public void completedContainer(Resource clusterResource,
       FiCaSchedulerApp application, FiCaSchedulerNode node, 

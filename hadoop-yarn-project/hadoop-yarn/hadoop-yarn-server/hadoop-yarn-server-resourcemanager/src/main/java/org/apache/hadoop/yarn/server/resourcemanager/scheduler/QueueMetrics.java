@@ -176,7 +176,7 @@ public class QueueMetrics implements MetricsSource {
       users.put(userName, metrics);
       metricsSystem.register(
           sourceName(queueName).append(",user=").append(userName).toString(),
-          "Metrics for user '"+ userName +"' in queue '"+ queueName +"'",
+          "Metrics for user '" + userName + "' in queue '" + queueName + "'",
           metrics.tag(QUEUE_INFO, queueName).tag(USER_INFO, userName));
     }
     return metrics;
@@ -407,6 +407,18 @@ public class QueueMetrics implements MetricsSource {
     }
     if (parent != null) {
       parent.releaseResources(user, containers, res);
+    }
+  }
+
+  public void decreaseResources(String user, Resource res) {
+    allocatedMB.decr(res.getMemory());
+    allocatedVCores.decr(res.getVirtualCores());
+    QueueMetrics userMetrics = getUserMetrics(user);
+    if (userMetrics != null) {
+      userMetrics.decreaseResources(user, res);
+    }
+    if (parent != null) {
+      parent.decreaseResources(user, res);
     }
   }
 

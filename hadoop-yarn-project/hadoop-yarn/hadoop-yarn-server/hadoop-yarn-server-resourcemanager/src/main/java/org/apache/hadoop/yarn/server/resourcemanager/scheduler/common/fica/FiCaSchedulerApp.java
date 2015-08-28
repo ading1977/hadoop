@@ -45,6 +45,7 @@ import org.apache.hadoop.yarn.server.resourcemanager.rmcontainer.RMContainerEven
 import org.apache.hadoop.yarn.server.resourcemanager.rmcontainer.RMContainerEventType;
 import org.apache.hadoop.yarn.server.resourcemanager.rmcontainer.RMContainerFinishedEvent;
 import org.apache.hadoop.yarn.server.resourcemanager.rmcontainer.RMContainerImpl;
+import org.apache.hadoop.yarn.server.resourcemanager.rmcontainer.RMContainerResourceChangeEvent;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.ActiveUsersManager;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.Allocation;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.NodeType;
@@ -119,6 +120,29 @@ public class FiCaSchedulerApp extends SchedulerApplicationAttempt {
     }
     
     containerAllocator = new RegularContainerAllocator(this, rc, rmContext);
+  }
+
+  synchronized public boolean containerDecreased(RMContainer rmContainer,
+      Resource resourceDecreased, String partition) {
+
+    ContainerId containerId = rmContainer.getContainerId();
+
+    // Inform the container
+    rmContainer.handle(
+        new RMContainerResourceChangeEvent(containerId, resourceDecreased,
+            RMContainerEventType.DECREASED));
+
+    RMAuditLogger.logSuccess(getUser(),
+        AuditConstants.DECREASE_CONTAINER, "SchedulerApp",
+        getApplicationId(), containerId);
+
+    // Update usage metrics
+    queue.getMetrics().decreaseResources(getUser(), resourceDecreased);
+    attemptResourceUsage.decUsed(partition, resourceDecreased);
+
+    // Clear resource utilization metrics cache.
+    lastMemoryAggregateAllocationUpdateTime = -1;
+    return true;
   }
 
   synchronized public boolean containerCompleted(RMContainer rmContainer,

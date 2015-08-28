@@ -122,6 +122,13 @@ public interface RMAppAttempt extends EventHandler<RMAppAttemptEvent> {
   List<ContainerStatus> pullJustFinishedContainers();
 
   /**
+   * Return a list of down-sized containers that have been acknowledged with NM.
+   * This function resets the list to empty.
+   * @return the list of down-sized containers acknowledged with NM.
+   */
+  List<Container> pullDecreasedContainersSentToNM();
+
+  /**
    * Returns a reference to the map of last set of finished containers to the
    * corresponding node. This does not reset the finished containers.
    * @return the list of just finished containers, this does not reset the

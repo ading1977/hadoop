@@ -31,5 +31,6 @@ public enum SystemMetricsEventType {
 
   // container events
   CONTAINER_CREATED,
+  CONTAINER_RESOURCE_CHANGED,
   CONTAINER_FINISHED
 }

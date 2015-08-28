@@ -30,6 +30,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
@@ -53,6 +54,7 @@ import org.apache.hadoop.yarn.api.records.ApplicationSubmissionContext;
 import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerExitStatus;
 import org.apache.hadoop.yarn.api.records.ContainerId;
+import org.apache.hadoop.yarn.api.records.ContainerResourceChangeRequest;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
 import org.apache.hadoop.yarn.api.records.FinalApplicationStatus;
 import org.apache.hadoop.yarn.api.records.NodeId;
@@ -84,6 +86,7 @@ import org.apache.hadoop.yarn.server.resourcemanager.rmapp.RMAppFinishedAttemptE
 import org.apache.hadoop.yarn.server.resourcemanager.rmapp.RMAppImpl;
 import org.apache.hadoop.yarn.server.resourcemanager.rmapp.attempt.event.RMAppAttemptContainerAllocatedEvent;
 import org.apache.hadoop.yarn.server.resourcemanager.rmapp.attempt.event.RMAppAttemptContainerFinishedEvent;
+import org.apache.hadoop.yarn.server.resourcemanager.rmapp.attempt.event.RMAppAttemptContainerResourceChangedEvent;
 import org.apache.hadoop.yarn.server.resourcemanager.rmapp.attempt.event.RMAppAttemptLaunchFailedEvent;
 import org.apache.hadoop.yarn.server.resourcemanager.rmapp.attempt.event.RMAppAttemptRegistrationEvent;
 import org.apache.hadoop.yarn.server.resourcemanager.rmapp.attempt.event.RMAppAttemptStatusupdateEvent;
@@ -147,6 +150,11 @@ public class RMAppAttemptImpl implements RMAppAttempt, Recoverable {
       finishedContainersSentToAM =
       new ConcurrentHashMap<NodeId, List<ContainerStatus>>();
   private volatile Container masterContainer;
+
+  // Tracks the decreased containers that have been just sent to NM
+  // for enforcement.
+  private ConcurrentMap<NodeId, List<Container>> decreasedContainersSentToNM =
+      new ConcurrentHashMap<>();
 
   private float progress = 0;
   private String host = "N/A";
@@ -337,13 +345,17 @@ public class RMAppAttemptImpl implements RMAppAttempt, Recoverable {
           RMAppAttemptEventType.KILL,
           new FinalSavingTransition(new FinalTransition(
             RMAppAttemptState.KILLED), RMAppAttemptState.KILLED))
+      .addTransition(
+          RMAppAttemptState.RUNNING, RMAppAttemptState.RUNNING,
+          RMAppAttemptEventType.CONTAINER_RESOURCE_DECREASED,
+          new ContainerResourceDecreasedTransition())
 
        // Transitions from FINAL_SAVING State
       .addTransition(RMAppAttemptState.FINAL_SAVING,
           EnumSet.of(RMAppAttemptState.FINISHING, RMAppAttemptState.FAILED,
-            RMAppAttemptState.KILLED, RMAppAttemptState.FINISHED),
-            RMAppAttemptEventType.ATTEMPT_UPDATE_SAVED,
-            new FinalStateSavedTransition())
+              RMAppAttemptState.KILLED, RMAppAttemptState.FINISHED),
+          RMAppAttemptEventType.ATTEMPT_UPDATE_SAVED,
+          new FinalStateSavedTransition())
       .addTransition(RMAppAttemptState.FINAL_SAVING, RMAppAttemptState.FINAL_SAVING,
           RMAppAttemptEventType.CONTAINER_FINISHED,
           new ContainerFinishedAtFinalSavingTransition())
@@ -717,6 +729,25 @@ public class RMAppAttemptImpl implements RMAppAttempt, Recoverable {
   }
 
   @Override
+  public List<Container> pullDecreasedContainersSentToNM() {
+    this.writeLock.lock();
+   try {
+     List<Container> returnList = new ArrayList<>();
+     for (NodeId nodeId : this.decreasedContainersSentToNM.keySet()) {
+       // Clear and get current value
+       List<Container> decreasedContainers =
+           this.decreasedContainersSentToNM.put(
+               nodeId, new ArrayList<Container>());
+       // Append to the return list
+       returnList.addAll(decreasedContainers);
+     }
+     return returnList;
+   } finally {
+     this.writeLock.unlock();
+   }
+  }
+
+  @Override
   public List<ContainerStatus> pullJustFinishedContainers() {
     this.writeLock.lock();
 
@@ -918,6 +949,12 @@ public class RMAppAttemptImpl implements RMAppAttempt, Recoverable {
   private static final List<ResourceRequest> EMPTY_CONTAINER_REQUEST_LIST =
       new ArrayList<ResourceRequest>();
 
+  private static final List<ContainerResourceChangeRequest>
+      EMPTY_CONTAINER_RESOURCE_INCREASE_LIST = new ArrayList<>();
+
+  private static final List<ContainerResourceChangeRequest>
+      EMPTY_CONTAINER_RESOURCE_DECREASE_LIST = new ArrayList<>();
+
   @VisibleForTesting
   public static final class ScheduleTransition
       implements
@@ -944,7 +981,9 @@ public class RMAppAttemptImpl implements RMAppAttempt, Recoverable {
         Allocation amContainerAllocation =
             appAttempt.scheduler.allocate(appAttempt.applicationAttemptId,
                 Collections.singletonList(appAttempt.amReq),
-                EMPTY_CONTAINER_RELEASE_LIST, null, null);
+                EMPTY_CONTAINER_RELEASE_LIST,
+                EMPTY_CONTAINER_RESOURCE_INCREASE_LIST,
+                EMPTY_CONTAINER_RESOURCE_DECREASE_LIST, null, null);
         if (amContainerAllocation != null
             && amContainerAllocation.getContainers() != null) {
           assert (amContainerAllocation.getContainers().size() == 0);
@@ -967,8 +1006,9 @@ public class RMAppAttemptImpl implements RMAppAttempt, Recoverable {
       // Acquire the AM container from the scheduler.
       Allocation amContainerAllocation =
           appAttempt.scheduler.allocate(appAttempt.applicationAttemptId,
-            EMPTY_CONTAINER_REQUEST_LIST, EMPTY_CONTAINER_RELEASE_LIST, null,
-            null);
+              EMPTY_CONTAINER_REQUEST_LIST, EMPTY_CONTAINER_RELEASE_LIST,
+              EMPTY_CONTAINER_RESOURCE_INCREASE_LIST,
+              EMPTY_CONTAINER_RESOURCE_DECREASE_LIST, null, null);
       // There must be at least one container allocated, because a
       // CONTAINER_ALLOCATED is emitted after an RMContainer is constructed,
       // and is put in SchedulerApplication#newlyAllocatedContainers.
@@ -1616,6 +1656,22 @@ public class RMAppAttemptImpl implements RMAppAttempt, Recoverable {
     diagnostics.append(unregisterEvent.getDiagnostics());
     originalTrackingUrl = sanitizeTrackingUrl(unregisterEvent.getFinalTrackingUrl());
     finalStatus = unregisterEvent.getFinalApplicationStatus();
+  }
+
+  private static final class ContainerResourceDecreasedTransition extends
+      BaseTransition {
+
+    @Override
+    public void transition(
+        RMAppAttemptImpl appAttempt, RMAppAttemptEvent event) {
+      RMAppAttemptContainerResourceChangedEvent changedEvent =
+          (RMAppAttemptContainerResourceChangedEvent) event;
+      NodeId nodeId = changedEvent.getNodeId();
+      Container changedContainer = changedEvent.getChangedContainer();
+      appAttempt.decreasedContainersSentToNM.putIfAbsent(
+          nodeId, new ArrayList<Container>());
+      appAttempt.decreasedContainersSentToNM.get(nodeId).add(changedContainer);
+    }
   }
 
   private static final class ContainerFinishedTransition

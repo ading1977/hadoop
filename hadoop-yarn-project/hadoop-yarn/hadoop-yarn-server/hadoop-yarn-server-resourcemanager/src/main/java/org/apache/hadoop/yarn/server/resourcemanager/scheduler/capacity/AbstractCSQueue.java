@@ -356,7 +356,14 @@ public abstract class AbstractCSQueue implements CSQueue {
         minimumAllocation, this, labelManager, nodePartition);
     --numContainers;
   }
-  
+
+  protected synchronized void decreaseResource(Resource clusterResource,
+      Resource resource, String nodePartition) {
+    queueUsage.decUsed(nodePartition, resource);
+    CSQueueUtils.updateQueueStatistics(resourceCalculator, clusterResource,
+        minimumAllocation, this, labelManager, nodePartition);
+  }
+
   @Private
   public boolean getReservationContinueLooking() {
     return reservationsContinueLooking;

@@ -100,7 +100,15 @@ public interface OrderingPolicy<S extends SchedulableEntity> {
    */
   public void containerReleased(S schedulableEntity, 
     RMContainer r);
-  
+
+  /**
+   * The passed SchedulableEntity has decreased the passed Container,
+   * take appropriate action (depending on comparator, a reordering of the
+   * SchedulableEntity may be required)
+   */
+  public void containerDecreased(S schedulableEntity,
+     RMContainer r);
+
   /**
    * Demand Updated for the passed schedulableEntity, reorder if needed.
    */

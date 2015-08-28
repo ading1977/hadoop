@@ -37,6 +37,7 @@ import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ApplicationResourceUsageReport;
 import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerId;
+import org.apache.hadoop.yarn.api.records.ContainerResourceChangeRequest;
 import org.apache.hadoop.yarn.api.records.ContainerState;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
 import org.apache.hadoop.yarn.api.records.NodeId;
@@ -398,8 +399,9 @@ public abstract class AbstractYarnScheduler
       }
 
       synchronized (schedulerAttempt) {
+        ContainerId containerId = container.getContainerId();
         Set<ContainerId> releases = schedulerAttempt.getPendingRelease();
-        if (releases.contains(container.getContainerId())) {
+        if (releases.contains(containerId)) {
           // release the container
           rmContainer.handle(new RMContainerFinishedEvent(container
             .getContainerId(), SchedulerUtils.createAbnormalContainerStatus(
@@ -407,6 +409,17 @@ public abstract class AbstractYarnScheduler
             RMContainerEventType.RELEASED));
           releases.remove(container.getContainerId());
           LOG.info(container.getContainerId() + " is released by application.");
+        }
+        Set<ContainerResourceChangeRequest> decreases =
+            schedulerAttempt.getPendingDecrease();
+        for (ContainerResourceChangeRequest decrease : decreases) {
+          if (!containerId.equals(decrease.getContainerId())) {
+            continue;
+          }
+          // found a match
+          decreasedContainer(rmContainer, decrease.getCapability());
+          decreases.remove(decrease);
+          break;
         }
       }
     }
@@ -416,8 +429,8 @@ public abstract class AbstractYarnScheduler
       RMNode node) {
     Container container =
         Container.newInstance(status.getContainerId(), node.getNodeID(),
-          node.getHttpAddress(), status.getAllocatedResource(),
-          status.getPriority(), null);
+            node.getHttpAddress(), status.getAllocatedResource(),
+            status.getPriority(), null);
     ApplicationAttemptId attemptId =
         container.getId().getApplicationAttemptId();
     RMContainer rmContainer =
@@ -474,6 +487,16 @@ public abstract class AbstractYarnScheduler
                 containerId);
           }
           attempt.getPendingRelease().clear();
+          for (ContainerResourceChangeRequest decrease:
+              attempt.getPendingDecrease()) {
+            RMAuditLogger.logFailure(app.getUser(),
+                AuditConstants.DECREASE_CONTAINER,
+                "Unauthorized access or invalid container", "Scheduler",
+                "Trying to decrease resource of container not owned by app "
+                    + "or with invalid id.", attempt.getApplicationId(),
+                decrease.getContainerId());
+          }
+          attempt.getPendingDecrease().clear();
         }
       }
     }
@@ -483,9 +506,41 @@ public abstract class AbstractYarnScheduler
   protected abstract void completedContainer(RMContainer rmContainer,
       ContainerStatus containerStatus, RMContainerEventType event);
 
-  protected void releaseContainers(List<ContainerId> containers,
+  // handle a decreased container
+  protected abstract void decreasedContainer(RMContainer rmContainer,
+      Resource targetResource);
+
+  protected void decreaseContainers(
+      List<ContainerResourceChangeRequest> decreasedContainers,
       SchedulerApplicationAttempt attempt) {
-    for (ContainerId containerId : containers) {
+    for (ContainerResourceChangeRequest decrease : decreasedContainers) {
+      ContainerId containerId = decrease.getContainerId();
+      Resource resource = decrease.getCapability();
+      RMContainer rmContainer = getRMContainer(containerId);
+      if (rmContainer == null) {
+        if (System.currentTimeMillis() - ResourceManager.getClusterTimeStamp()
+            < nmExpireInterval) {
+          LOG.info(containerId + " doesn't exist. Add the container"
+              + " to the decrease request cache as it maybe on recovery.");
+          synchronized (attempt) {
+            attempt.getPendingDecrease().add(decrease);
+          }
+        } else {
+          RMAuditLogger.logFailure(attempt.getUser(),
+              AuditConstants.DECREASE_CONTAINER,
+              "Unauthorized access or invalid container", "Scheduler",
+              "Trying to decrease resource of container not owned by app"
+                  + "or with invalid id.",
+              attempt.getApplicationId(), containerId);
+        }
+      }
+      decreasedContainer(rmContainer, resource);
+    }
+  }
+
+  protected void releaseContainers(List<ContainerId> releasedContainers,
+      SchedulerApplicationAttempt attempt) {
+    for (ContainerId containerId : releasedContainers) {
       RMContainer rmContainer = getRMContainer(containerId);
       if (rmContainer == null) {
         if (System.currentTimeMillis() - ResourceManager.getClusterTimeStamp()
@@ -504,8 +559,8 @@ public abstract class AbstractYarnScheduler
         }
       }
       completedContainer(rmContainer,
-        SchedulerUtils.createAbnormalContainerStatus(containerId,
-          SchedulerUtils.RELEASED_CONTAINER), RMContainerEventType.RELEASED);
+          SchedulerUtils.createAbnormalContainerStatus(containerId,
+              SchedulerUtils.RELEASED_CONTAINER), RMContainerEventType.RELEASED);
     }
   }
 

@@ -192,9 +192,13 @@ public abstract class SchedulerNode {
     return false;
   }
 
-  private synchronized void updateResource(Container container) {
+  private synchronized void releaseResource(Container container) {
     addAvailableResource(container.getResource());
     --numContainers;
+  }
+
+  public synchronized void decreaseContainer(Resource resourceDecreased) {
+    addAvailableResource(resourceDecreased);
   }
 
   /**
@@ -211,7 +215,7 @@ public abstract class SchedulerNode {
 
     /* remove the containers from the nodemanger */
     if (null != launchedContainers.remove(container.getId())) {
-      updateResource(container);
+      releaseResource(container);
     }
 
     LOG.info("Released container " + container.getId() + " of capacity "

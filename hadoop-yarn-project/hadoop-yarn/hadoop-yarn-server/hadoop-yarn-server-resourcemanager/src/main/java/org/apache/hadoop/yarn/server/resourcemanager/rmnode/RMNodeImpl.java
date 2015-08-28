@@ -19,9 +19,12 @@
 package org.apache.hadoop.yarn.server.resourcemanager.rmnode;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -36,6 +39,7 @@ import org.apache.hadoop.classification.InterfaceStability.Unstable;
 import org.apache.hadoop.net.Node;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
+import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ContainerState;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
@@ -59,6 +63,8 @@ import org.apache.hadoop.yarn.server.resourcemanager.nodelabels.RMNodeLabelsMana
 import org.apache.hadoop.yarn.server.resourcemanager.rmapp.RMApp;
 import org.apache.hadoop.yarn.server.resourcemanager.rmapp.RMAppImpl;
 import org.apache.hadoop.yarn.server.resourcemanager.rmapp.RMAppRunningOnNodeEvent;
+import org.apache.hadoop.yarn.server.resourcemanager.rmapp.attempt.RMAppAttemptEventType;
+import org.apache.hadoop.yarn.server.resourcemanager.rmapp.attempt.event.RMAppAttemptContainerResourceChangedEvent;
 import org.apache.hadoop.yarn.server.resourcemanager.rmcontainer.ContainerAllocationExpirer;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.event.NodeAddedSchedulerEvent;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.event.NodeRemovedSchedulerEvent;
@@ -117,6 +123,21 @@ public class RMNodeImpl implements RMNode, EventHandler<RMNodeEvent> {
   private final Set<ContainerId> containersToClean = new TreeSet<ContainerId>(
       new ContainerIdComparator());
 
+  /* map of containers whose resource need to be decreased.
+   * This map tracks the containers whose resource have been reduced
+   * in the scheduler, and they will be sent to NM for resource
+   * enforcement during the next heartbeat response.
+   */
+  private final Map<ContainerId, Container> containersToDecrease =
+      new HashMap<>();
+
+  /* list of containers whose resource change has been sent to NM.
+   * This map tracks the down-sized containers that are waiting to be
+   * verified as received by the NM. If the NM sends the next heartbeat
+   * request it implicitly acks this list.
+   */
+  private final List<Container> decreasedContainersSentToNM =
+      new ArrayList<>();
   /*
    * set of containers to notify NM to remove them from its context. Currently,
    * this includes containers that were notified to AM about their completion
@@ -148,7 +169,7 @@ public class RMNodeImpl implements RMNode, EventHandler<RMNodeEvent> {
      .addTransition(NodeState.NEW, NodeState.RUNNING, 
          RMNodeEventType.STARTED, new AddNodeTransition())
      .addTransition(NodeState.NEW, NodeState.NEW,
-         RMNodeEventType.RESOURCE_UPDATE, 
+         RMNodeEventType.RESOURCE_UPDATE,
          new UpdateNodeResourceWhenUnusableTransition())
 
      //Transitions from RUNNING state
@@ -168,6 +189,9 @@ public class RMNodeImpl implements RMNode, EventHandler<RMNodeEvent> {
          RMNodeEventType.CLEANUP_APP, new CleanUpAppTransition())
      .addTransition(NodeState.RUNNING, NodeState.RUNNING,
          RMNodeEventType.CLEANUP_CONTAINER, new CleanUpContainerTransition())
+     .addTransition(NodeState.RUNNING, NodeState.RUNNING,
+         RMNodeEventType.CONTAINER_RESOURCE_DECREASED,
+         new DecreaseContainerResourceTransition())
      .addTransition(NodeState.RUNNING, NodeState.RUNNING,
          RMNodeEventType.FINISHED_CONTAINERS_PULLED_BY_AM,
          new AddContainersToBeRemovedFromNMTransition())
@@ -220,6 +244,9 @@ public class RMNodeImpl implements RMNode, EventHandler<RMNodeEvent> {
          RMNodeEventType.CLEANUP_APP, new CleanUpAppTransition())
      .addTransition(NodeState.UNHEALTHY, NodeState.UNHEALTHY,
          RMNodeEventType.CLEANUP_CONTAINER, new CleanUpContainerTransition())
+     .addTransition(NodeState.UNHEALTHY, NodeState.UNHEALTHY,
+         RMNodeEventType.CONTAINER_RESOURCE_DECREASED,
+         new DecreaseContainerResourceTransition())
      .addTransition(NodeState.UNHEALTHY, NodeState.UNHEALTHY,
          RMNodeEventType.RESOURCE_UPDATE, new UpdateNodeResourceWhenUnusableTransition())
      .addTransition(NodeState.UNHEALTHY, NodeState.UNHEALTHY,
@@ -431,6 +458,35 @@ public class RMNodeImpl implements RMNode, EventHandler<RMNodeEvent> {
     }
   };
 
+  private void sendDecreasedContainersToAM() {
+    for (Container container : this.decreasedContainersSentToNM) {
+      context.getDispatcher().getEventHandler().handle(
+          new RMAppAttemptContainerResourceChangedEvent(
+              container.getId().getApplicationAttemptId(),
+              container, RMAppAttemptEventType.CONTAINER_RESOURCE_DECREASED,
+              container.getNodeId()));
+    }
+    this.decreasedContainersSentToNM.clear();
+  }
+
+  @Override
+  public void updateNodeHeartbeatResponseForContainerResourceDecrease(
+      NodeHeartbeatResponse response) {
+    // Inform AppAttempt
+    sendDecreasedContainersToAM();
+    Collection<Container> decreasedContainersSentToNM;
+    this.writeLock.lock();
+    try {
+      decreasedContainersSentToNM = this.containersToDecrease.values();
+      response.addAllContainersToDecrease(
+          new ArrayList<>(decreasedContainersSentToNM));
+      this.containersToDecrease.clear();
+    } finally {
+      this.writeLock.unlock();
+    }
+    this.decreasedContainersSentToNM.addAll(decreasedContainersSentToNM);
+  }
+
   @Override
   public NodeHeartbeatResponse getLastNodeHeartBeatResponse() {
 
@@ -620,7 +676,7 @@ public class RMNodeImpl implements RMNode, EventHandler<RMNodeEvent> {
           (runningApps == null) || (runningApps.size() == 0);
       
       // No application running on the node, so send node-removal event with 
-      // cleaning up old container info.
+      // cleaning up old changedContainer info.
       if (noRunningApps) {
         rmNode.nodeUpdateQueue.clear();
         rmNode.context.getDispatcher().getEventHandler().handle(
@@ -747,6 +803,18 @@ public class RMNodeImpl implements RMNode, EventHandler<RMNodeEvent> {
     public void transition(RMNodeImpl rmNode, RMNodeEvent event) {
       rmNode.containersToClean.add(((
           RMNodeCleanContainerEvent) event).getContainerId());
+    }
+  }
+
+  public static class DecreaseContainerResourceTransition implements
+      SingleArcTransition<RMNodeImpl, RMNodeEvent> {
+
+    @Override
+    public void transition(RMNodeImpl rmNode, RMNodeEvent event) {
+      Container decreasedContainer =
+          ((RMNodeChangeContainerResourceEvent) event).getChangedContainer();
+      rmNode.containersToDecrease.put(
+          decreasedContainer.getId(), decreasedContainer);
     }
   }
 
@@ -932,7 +1000,7 @@ public class RMNodeImpl implements RMNode, EventHandler<RMNodeEvent> {
 
       // Don't bother with containers already scheduled for cleanup, or for
       // applications already killed. The scheduler doens't need to know any
-      // more about this container
+      // more about this changedContainer
       if (containersToClean.contains(containerId)) {
         LOG.info("Container " + containerId + " already scheduled for "
             + "cleanup, no further processing");
@@ -950,7 +1018,7 @@ public class RMNodeImpl implements RMNode, EventHandler<RMNodeEvent> {
       } else if (!runningApplications.contains(containerAppId)) {
         if (LOG.isDebugEnabled()) {
           LOG.debug("Container " + containerId
-              + " is the first container get launched for application "
+              + " is the first changedContainer get launched for application "
               + containerAppId);
         }
         runningApplications.add(containerAppId);
@@ -959,14 +1027,14 @@ public class RMNodeImpl implements RMNode, EventHandler<RMNodeEvent> {
       // Process running containers
       if (remoteContainer.getState() == ContainerState.RUNNING) {
         if (!launchedContainers.contains(containerId)) {
-          // Just launched container. RM knows about it the first time.
+          // Just launched changedContainer. RM knows about it the first time.
           launchedContainers.add(containerId);
           newlyLaunchedContainers.add(remoteContainer);
           // Unregister from containerAllocationExpirer.
           containerAllocationExpirer.unregister(containerId);
         }
       } else {
-        // A finished container
+        // A finished changedContainer
         launchedContainers.remove(containerId);
         completedContainers.add(remoteContainer);
         // Unregister from containerAllocationExpirer.

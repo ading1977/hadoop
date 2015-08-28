@@ -197,7 +197,20 @@ extends org.apache.hadoop.yarn.server.resourcemanager.scheduler.Queue {
   public CSAssignment assignContainers(Resource clusterResource,
       FiCaSchedulerNode node, ResourceLimits resourceLimits,
       SchedulingMode schedulingMode);
-  
+
+  /**
+   * A container assigned to the queue has decreased its resource
+   * @param clusterResource the resource of the cluster
+   * @param application application to which the container was assigned
+   * @param node node on which the container is running
+   * @param container container on which the resource has decreased
+   * @param resourceDecreased the amount of resource to decrease
+   * @param childQueue <code>CSQueue</code> to reinsert in childQueues
+   */
+  public void decreasedContainer(Resource clusterResource,
+      FiCaSchedulerApp application, FiCaSchedulerNode node,
+      RMContainer container, Resource resourceDecreased, CSQueue childQueue);
+
   /**
    * A container assigned to the queue has completed.
    * @param clusterResource the resource of the cluster

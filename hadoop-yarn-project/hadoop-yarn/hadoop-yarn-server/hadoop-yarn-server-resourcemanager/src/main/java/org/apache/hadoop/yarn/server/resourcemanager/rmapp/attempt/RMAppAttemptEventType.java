@@ -38,7 +38,10 @@ public enum RMAppAttemptEventType {
   // Source: Containers
   CONTAINER_ALLOCATED,
   CONTAINER_FINISHED,
-  
+
+  // Source: RMNode
+  CONTAINER_RESOURCE_DECREASED,
+
   // Source: RMStateStore
   ATTEMPT_NEW_SAVED,
   ATTEMPT_UPDATE_SAVED,

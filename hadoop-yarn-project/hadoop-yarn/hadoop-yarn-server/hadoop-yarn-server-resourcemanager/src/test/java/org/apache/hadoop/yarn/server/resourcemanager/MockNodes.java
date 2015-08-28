@@ -196,6 +196,11 @@ public class MockNodes {
     }
 
     @Override
+    public void updateNodeHeartbeatResponseForContainerResourceDecrease(
+        NodeHeartbeatResponse response) {
+    }
+
+    @Override
     public NodeHeartbeatResponse getLastNodeHeartBeatResponse() {
       return null;
     }

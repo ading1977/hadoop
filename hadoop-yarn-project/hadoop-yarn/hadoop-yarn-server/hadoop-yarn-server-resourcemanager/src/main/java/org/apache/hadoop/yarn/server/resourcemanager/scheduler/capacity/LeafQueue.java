@@ -558,7 +558,7 @@ public class LeafQueue extends AbstractCSQueue {
        queueCurrentLimit = queueResourceLimitsInfo.getQueueCurrentLimit();
      }
      Resource queueCap = Resources.max(resourceCalculator, lastClusterResource,
-       absoluteCapacityResource, queueCurrentLimit);
+         absoluteCapacityResource, queueCurrentLimit);
     Resource amResouceLimit =
         Resources.multiplyAndNormalizeUp(resourceCalculator, queueCap,
             maxAMResourcePerQueuePercent, minimumAllocation);
@@ -575,8 +575,8 @@ public class LeafQueue extends AbstractCSQueue {
       * by the userlimit and the userlimit factor as is the userlimit
       *
       */ 
-     float effectiveUserLimit = Math.max(userLimit / 100.0f, 1.0f /    
-       Math.max(getActiveUsersManager().getNumActiveUsers(), 1));
+     float effectiveUserLimit = Math.max(userLimit / 100.0f, 1.0f /
+         Math.max(getActiveUsersManager().getNumActiveUsers(), 1));
      
      return Resources.multiplyAndNormalizeUp( 
           resourceCalculator,
@@ -714,13 +714,13 @@ public class LeafQueue extends AbstractCSQueue {
     activateApplications();
 
     LOG.info("Application removed -" +
-        " appId: " + application.getApplicationId() +
-        " user: " + application.getUser() +
-        " queue: " + getQueueName() +
-        " #user-pending-applications: " + user.getPendingApplications() +
-        " #user-active-applications: " + user.getActiveApplications() +
-        " #queue-pending-applications: " + getNumPendingApplications() +
-        " #queue-active-applications: " + getNumActiveApplications()
+            " appId: " + application.getApplicationId() +
+            " user: " + application.getUser() +
+            " queue: " + getQueueName() +
+            " #user-pending-applications: " + user.getPendingApplications() +
+            " #user-active-applications: " + user.getActiveApplications() +
+            " #queue-pending-applications: " + getNumPendingApplications() +
+            " #queue-active-applications: " + getNumActiveApplications()
     );
   }
 
@@ -1085,6 +1085,23 @@ public class LeafQueue extends AbstractCSQueue {
       return false;
     }
     return true;
+  }
+
+  @Override
+  public void decreasedContainer(Resource clusterResource,
+      FiCaSchedulerApp application, FiCaSchedulerNode node,
+      RMContainer rmContainer, Resource resourceDecreased, CSQueue childQueue) {
+    if (application == null) {
+      return;
+    }
+    synchronized (this) {
+      application.containerDecreased(
+          rmContainer, resourceDecreased, node.getPartition());
+      orderingPolicy.containerDecreased(application, rmContainer);
+      node.decreaseContainer(resourceDecreased);
+    }
+    getParent().decreasedContainer(clusterResource, application, node,
+        rmContainer, resourceDecreased, this);
   }
 
   @Override

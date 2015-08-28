@@ -163,7 +163,8 @@ public class FairSchedulerTestBase {
     resourceManager.getRMContext().getRMApps()
         .put(id.getApplicationId(), rmApp);
 
-    scheduler.allocate(id, ask, new ArrayList<ContainerId>(), null, null);
+    scheduler.allocate(
+        id, ask, new ArrayList<ContainerId>(), null, null, null, null);
     return id;
   }
   
@@ -189,7 +190,8 @@ public class FairSchedulerTestBase {
     resourceManager.getRMContext().getRMApps()
         .put(id.getApplicationId(), rmApp);
 
-    scheduler.allocate(id, ask, new ArrayList<ContainerId>(), null, null);
+    scheduler.allocate(
+        id, ask, new ArrayList<ContainerId>(), null, null, null, null);
     return id;
   }
 
@@ -211,7 +213,8 @@ public class FairSchedulerTestBase {
       ResourceRequest request, ApplicationAttemptId attId) {
     List<ResourceRequest> ask = new ArrayList<ResourceRequest>();
     ask.add(request);
-    scheduler.allocate(attId, ask,  new ArrayList<ContainerId>(), null, null);
+    scheduler.allocate(
+        attId, ask,  new ArrayList<ContainerId>(), null, null, null, null);
   }
 
   protected void createApplicationWithAMResource(ApplicationAttemptId attId,

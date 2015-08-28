@@ -483,6 +483,9 @@ public class ResourceTrackerService extends AbstractService implements
       }
     }
 
+    rmNode.updateNodeHeartbeatResponseForContainerResourceDecrease(
+        nodeHeartBeatResponse);
+
     return nodeHeartBeatResponse;
   }
 

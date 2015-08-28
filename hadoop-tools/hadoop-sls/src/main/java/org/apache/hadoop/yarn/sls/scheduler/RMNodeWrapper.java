@@ -130,6 +130,13 @@ public class RMNodeWrapper implements RMNode {
   }
 
   @Override
+  public void updateNodeHeartbeatResponseForContainerResourceDecrease(
+      NodeHeartbeatResponse response) {
+    node.updateNodeHeartbeatResponseForContainerResourceDecrease(
+        response);
+  }
+
+  @Override
   public NodeHeartbeatResponse getLastNodeHeartBeatResponse() {
     return node.getLastNodeHeartBeatResponse();
   }

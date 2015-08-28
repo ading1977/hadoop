@@ -67,7 +67,7 @@ public abstract class AbstractComparatorOrderingPolicy<S extends SchedulableEnti
     //remove, update comparable data, and reinsert to update position in order
     schedulableEntities.remove(schedulableEntity);
     updateSchedulingResourceUsage(
-      schedulableEntity.getSchedulingResourceUsage());
+        schedulableEntity.getSchedulingResourceUsage());
     schedulableEntities.add(schedulableEntity);
   }
   
@@ -131,7 +131,11 @@ public abstract class AbstractComparatorOrderingPolicy<S extends SchedulableEnti
   @Override
   public abstract void containerReleased(S schedulableEntity, 
     RMContainer r);
-  
+
+  @Override
+  public abstract void containerDecreased(S schedulableEntity,
+    RMContainer r);
+
   @Override
   public abstract void demandUpdated(S schedulableEntity);
 

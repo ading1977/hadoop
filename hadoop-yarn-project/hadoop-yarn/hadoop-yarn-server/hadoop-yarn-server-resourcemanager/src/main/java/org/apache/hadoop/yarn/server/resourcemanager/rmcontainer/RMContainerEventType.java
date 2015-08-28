@@ -28,12 +28,18 @@ public enum RMContainerEventType {
 
   LAUNCHED,
   FINISHED,
+  DECREASED,
+  INCREASE_ACQUIRED,
+  INCREASED,
 
   // Source: ApplicationMasterService->Scheduler
   RELEASED,
 
   // Source: ContainerAllocationExpirer  
   EXPIRE,
+
+  // Source: ContainerResourceIncreaseExpirer
+  INCREASE_EXPIRE,
 
   RECOVER
 }

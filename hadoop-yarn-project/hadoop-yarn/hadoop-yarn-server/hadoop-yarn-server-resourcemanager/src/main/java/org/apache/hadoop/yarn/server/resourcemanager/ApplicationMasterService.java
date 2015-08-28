@@ -55,6 +55,7 @@ import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ApplicationSubmissionContext;
 import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerId;
+import org.apache.hadoop.yarn.api.records.ContainerResourceChangeRequest;
 import org.apache.hadoop.yarn.api.records.NMToken;
 import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.api.records.NodeReport;
@@ -488,6 +489,8 @@ public class ApplicationMasterService extends AbstractService implements
 
       List<ResourceRequest> ask = request.getAskList();
       List<ContainerId> release = request.getReleaseList();
+      List<ContainerResourceChangeRequest> increase = request.getIncreaseRequests();
+      List<ContainerResourceChangeRequest> decrease = request.getDecreaseRequests();
 
       ResourceBlacklistRequest blacklistRequest =
           request.getResourceBlacklistRequest();
@@ -518,7 +521,10 @@ public class ApplicationMasterService extends AbstractService implements
         LOG.warn("Invalid resource ask by application " + appAttemptId, e);
         throw e;
       }
-      
+
+      // need sanity check for increase and decrease requests
+      // TODO ...
+
       try {
         RMServerUtils.validateBlacklistRequest(blacklistRequest);
       }  catch (InvalidResourceBlacklistRequestException e) {
@@ -551,7 +557,7 @@ public class ApplicationMasterService extends AbstractService implements
       } else {
         allocation =
           this.rScheduler.allocate(appAttemptId, ask, release,
-              blacklistAdditions, blacklistRemovals);
+              increase, decrease, blacklistAdditions, blacklistRemovals);
       }
 
       if (!blacklistAdditions.isEmpty() || !blacklistRemovals.isEmpty()) {
@@ -597,7 +603,8 @@ public class ApplicationMasterService extends AbstractService implements
           .pullJustFinishedContainers());
       allocateResponse.setResponseId(lastResponse.getResponseId() + 1);
       allocateResponse.setAvailableResources(allocation.getResourceLimit());
-
+      allocateResponse.setDecreasedContainers(
+          appAttempt.pullDecreasedContainersSentToNM());
       allocateResponse.setNumClusterNodes(this.rScheduler.getNumClusterNodes());
 
       // add preemption to the allocateResponse message (if any)

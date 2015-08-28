@@ -16,36 +16,22 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.yarn.server.resourcemanager.scheduler.event;
+package org.apache.hadoop.yarn.server.resourcemanager.rmcontainer;
 
-public enum SchedulerEventType {
+import org.apache.hadoop.yarn.api.records.ContainerId;
+import org.apache.hadoop.yarn.api.records.Resource;
 
-  // Source: Node
-  NODE_ADDED,
-  NODE_REMOVED,
-  NODE_UPDATE,
-  NODE_RESOURCE_UPDATE,
-  NODE_LABELS_UPDATE,
+public class RMContainerResourceChangeEvent extends RMContainerEvent {
 
-  // Source: RMApp
-  APP_ADDED,
-  APP_REMOVED,
+  Resource resourceChanged;
 
-  // Source: RMAppAttempt
-  APP_ATTEMPT_ADDED,
-  APP_ATTEMPT_REMOVED,
+  public RMContainerResourceChangeEvent(ContainerId containerId,
+      Resource resourceChanged, RMContainerEventType event) {
+    super(containerId, event);
+    this.resourceChanged = resourceChanged;
+  }
 
-  // Source: ContainerAllocationExpirer
-  CONTAINER_EXPIRED,
-
-  // Source: ContainerResourceIncreaseExpirer
-  CONTAINER_INCREASE_EXPIRED,
-
-  // Source: RMContainer
-  CONTAINER_RESCHEDULED,
-
-  // Source: SchedulingEditPolicy
-  DROP_RESERVATION,
-  PREEMPT_CONTAINER,
-  KILL_CONTAINER
+  Resource getResourceChanged() {
+    return this.resourceChanged;
+  }
 }

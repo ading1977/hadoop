@@ -52,6 +52,7 @@ import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerExitStatus;
 import org.apache.hadoop.yarn.api.records.ContainerId;
+import org.apache.hadoop.yarn.api.records.ContainerResourceChangeRequest;
 import org.apache.hadoop.yarn.api.records.ContainerState;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
 import org.apache.hadoop.yarn.api.records.NodeId;
@@ -807,8 +808,8 @@ public class CapacityScheduler extends
       }
     } else {
       rmContext.getDispatcher().getEventHandler().handle(
-        new RMAppAttemptEvent(applicationAttemptId,
-            RMAppAttemptEventType.ATTEMPT_ADDED));
+          new RMAppAttemptEvent(applicationAttemptId,
+              RMAppAttemptEventType.ATTEMPT_ADDED));
     }
   }
 
@@ -890,7 +891,9 @@ public class CapacityScheduler extends
   @Override
   @Lock(Lock.NoLock.class)
   public Allocation allocate(ApplicationAttemptId applicationAttemptId,
-      List<ResourceRequest> ask, List<ContainerId> release, 
+      List<ResourceRequest> ask, List<ContainerId> release,
+      List<ContainerResourceChangeRequest> increase,
+      List<ContainerResourceChangeRequest> decrease,
       List<String> blacklistAdditions, List<String> blacklistRemovals) {
 
     FiCaSchedulerApp application = getApplicationAttempt(applicationAttemptId);
@@ -903,8 +906,14 @@ public class CapacityScheduler extends
         ask, getResourceCalculator(), getClusterResource(),
         getMinimumResourceCapability(), getMaximumResourceCapability());
 
+    // Sanity check for increase/decrease request
+    // TODO:
+
     // Release containers
     releaseContainers(release, application);
+
+    // Decrease containers
+    decreaseContainers(decrease, application);
 
     Allocation allocation;
 
@@ -1106,15 +1115,15 @@ public class CapacityScheduler extends
           reservations.get(reservations.size() - 1).containerId;
       String reservedQueue = reservations.get(reservations.size() - 1).queue;
       schedulerHealth.updateReservation(now, nodeId, reservedContainerId,
-        reservedQueue);
+          reservedQueue);
     }
     schedulerHealth.updateSchedulerReservationCounts(assignment
       .getAssignmentInformation().getNumReservations());
     schedulerHealth.updateSchedulerAllocationCounts(assignment
       .getAssignmentInformation().getNumAllocations());
     schedulerHealth.updateSchedulerRunDetails(now, assignment
-      .getAssignmentInformation().getAllocated(), assignment
-      .getAssignmentInformation().getReserved());
+        .getAssignmentInformation().getAllocated(), assignment
+        .getAssignmentInformation().getReserved());
  }
 
   private synchronized void allocateContainersToNode(FiCaSchedulerNode node) {
@@ -1422,10 +1431,10 @@ public class CapacityScheduler extends
     // Remove reservations, if any
     RMContainer reservedContainer = node.getReservedContainer();
     if (reservedContainer != null) {
-      completedContainer(reservedContainer, 
+      completedContainer(reservedContainer,
           SchedulerUtils.createAbnormalContainerStatus(
-              reservedContainer.getContainerId(), 
-              SchedulerUtils.LOST_CONTAINER), 
+              reservedContainer.getContainerId(),
+              SchedulerUtils.LOST_CONTAINER),
           RMContainerEventType.KILL);
     }
 
@@ -1435,7 +1444,32 @@ public class CapacityScheduler extends
     LOG.info("Removed node " + nodeInfo.getNodeAddress() + 
         " clusterResource: " + clusterResource);
   }
-  
+
+  @Lock(CapacityScheduler.class)
+  @Override
+  protected synchronized void decreasedContainer(
+      RMContainer rmContainer, Resource targetResource) {
+    if (rmContainer == null) {
+      return;
+    }
+    Container container = rmContainer.getContainer();
+    // Get the application for the decreased container
+    FiCaSchedulerApp application =
+        getCurrentAttemptForContainer(container.getId());
+    if (application == null) {
+      return;
+    }
+    // Get the node on which the container was allocated
+    FiCaSchedulerNode node = getNode(container.getNodeId());
+    // Get the leaf queue that the application was submitted to
+    LeafQueue queue = (LeafQueue)application.getQueue();
+    // Decrease resource
+    Resource resourceDecreased = Resources.subtract(
+        rmContainer.getAllocatedResource(), targetResource);
+    queue.decreasedContainer(clusterResource, application, node,
+        rmContainer, resourceDecreased, null);
+  }
+
   @Lock(CapacityScheduler.class)
   @Override
   protected synchronized void completedContainer(RMContainer rmContainer,

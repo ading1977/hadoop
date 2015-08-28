@@ -40,12 +40,17 @@ public class FifoOrderingPolicy<S extends SchedulableEntity> extends AbstractCom
   @Override
   public void containerAllocated(S schedulableEntity, 
     RMContainer r) {
-    }
+  }
 
   @Override
   public void containerReleased(S schedulableEntity, 
     RMContainer r) {
-    }
+  }
+
+  @Override
+  public void containerDecreased(S schedulableEntity,
+    RMContainer r) {
+  }
 
   @Override
   public void demandUpdated(S schedulableEntity) {

@@ -42,6 +42,7 @@ public enum RMNodeEventType {
   // Source: Container
   CONTAINER_ALLOCATED,
   CLEANUP_CONTAINER,
+  CONTAINER_RESOURCE_DECREASED,
 
   // Source: RMAppAttempt
   FINISHED_CONTAINERS_PULLED_BY_AM,

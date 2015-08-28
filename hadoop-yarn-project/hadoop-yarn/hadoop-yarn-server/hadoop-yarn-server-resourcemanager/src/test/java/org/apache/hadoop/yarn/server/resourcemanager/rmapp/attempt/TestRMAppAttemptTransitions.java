@@ -469,7 +469,8 @@ public class TestRMAppAttemptTransitions {
         applicationAttempt.getAppAttemptState());
     verify(scheduler, times(expectedAllocateCount)).
     allocate(any(ApplicationAttemptId.class), 
-        any(List.class), any(List.class), any(List.class), any(List.class));
+        any(List.class), any(List.class), any(List.class), any(List.class),
+        any(List.class), any(List.class));
 
     assertEquals(0,applicationAttempt.getJustFinishedContainers().size());
     assertNull(applicationAttempt.getMasterContainer());
@@ -492,7 +493,8 @@ public class TestRMAppAttemptTransitions {
         allocate(
             any(
                 ApplicationAttemptId.class), any(List.class), any(List.class), 
-                any(List.class), any(List.class));
+                any(List.class), any(List.class), any(List.class),
+                any(List.class));
     verify(nmTokenManager).clearNodeSetForAttempt(
       applicationAttempt.getAppAttemptId());
   }
@@ -643,10 +645,12 @@ public class TestRMAppAttemptTransitions {
         thenReturn(Collections.singletonList(container));
     when(
         scheduler.allocate(
-            any(ApplicationAttemptId.class), 
-            any(List.class), 
-            any(List.class), 
-            any(List.class), 
+            any(ApplicationAttemptId.class),
+            any(List.class),
+            any(List.class),
+            any(List.class),
+            any(List.class),
+            any(List.class),
             any(List.class))).
     thenReturn(allocation);
     RMContainer rmContainer = mock(RMContainerImpl.class);
@@ -1513,7 +1517,8 @@ public class TestRMAppAttemptTransitions {
     YarnScheduler mockScheduler = mock(YarnScheduler.class);
     when(
         mockScheduler.allocate(any(ApplicationAttemptId.class),
-            any(List.class), any(List.class), any(List.class), any(List.class)))
+            any(List.class), any(List.class), any(List.class),
+            any(List.class), any(List.class), any(List.class)))
         .thenAnswer(new Answer<Allocation>() {
 
           @SuppressWarnings("rawtypes")

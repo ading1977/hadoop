@@ -188,6 +188,18 @@ public class SystemMetricsPublisher extends CompositeService {
   }
 
   @SuppressWarnings("unchecked")
+  public void containerResourceChanged(RMContainer container, long changeTime) {
+    if (publishSystemMetrics) {
+      dispatcher.getEventHandler().handle(
+          new ContainerResourceChangedEvent(
+              container.getContainerId(),
+              container.getAllocatedNode(),
+              container.getAllocatedResource(),
+              changeTime));
+    }
+  }
+
+  @SuppressWarnings("unchecked")
   public void containerFinished(RMContainer container, long finishedTime) {
     if (publishSystemMetrics) {
       dispatcher.getEventHandler().handle(

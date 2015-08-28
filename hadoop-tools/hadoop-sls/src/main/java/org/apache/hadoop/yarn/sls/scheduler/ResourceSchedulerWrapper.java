@@ -51,6 +51,7 @@ import org.apache.hadoop.yarn.api.records.ApplicationResourceUsageReport;
 import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerExitStatus;
 import org.apache.hadoop.yarn.api.records.ContainerId;
+import org.apache.hadoop.yarn.api.records.ContainerResourceChangeRequest;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
 import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.api.records.Priority;
@@ -202,15 +203,17 @@ final public class ResourceSchedulerWrapper
 
   @Override
   public Allocation allocate(ApplicationAttemptId attemptId,
-                             List<ResourceRequest> resourceRequests,
-                             List<ContainerId> containerIds,
-                             List<String> strings, List<String> strings2) {
+      List<ResourceRequest> resourceRequests,
+      List<ContainerId> containerIds,
+      List<ContainerResourceChangeRequest> increase,
+      List<ContainerResourceChangeRequest> decrease,
+      List<String> strings, List<String> strings2) {
     if (metricsON) {
       final Timer.Context context = schedulerAllocateTimer.time();
       Allocation allocation = null;
       try {
         allocation = scheduler.allocate(attemptId, resourceRequests,
-                containerIds, strings, strings2);
+            containerIds, increase, decrease, strings, strings2);
         return allocation;
       } finally {
         context.stop();
@@ -224,7 +227,7 @@ final public class ResourceSchedulerWrapper
       }
     } else {
       return scheduler.allocate(attemptId,
-              resourceRequests, containerIds, strings, strings2);
+          resourceRequests, containerIds, increase, decrease, strings, strings2);
     }
   }
 
@@ -948,6 +951,12 @@ final public class ResourceSchedulerWrapper
   @Override
   protected void completedContainer(RMContainer rmContainer,
       ContainerStatus containerStatus, RMContainerEventType event) {
+    // do nothing
+  }
+
+  @Override
+  protected synchronized void decreasedContainer(
+      RMContainer rmContainer, Resource targetResource) {
     // do nothing
   }
 

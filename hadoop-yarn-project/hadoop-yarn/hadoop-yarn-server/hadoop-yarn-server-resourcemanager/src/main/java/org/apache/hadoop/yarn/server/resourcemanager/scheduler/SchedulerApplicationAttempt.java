@@ -39,6 +39,7 @@ import org.apache.hadoop.yarn.api.records.ApplicationResourceUsageReport;
 import org.apache.hadoop.yarn.api.records.ApplicationSubmissionContext;
 import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerId;
+import org.apache.hadoop.yarn.api.records.ContainerResourceChangeRequest;
 import org.apache.hadoop.yarn.api.records.LogAggregationContext;
 import org.apache.hadoop.yarn.api.records.NMToken;
 import org.apache.hadoop.yarn.api.records.NodeId;
@@ -114,6 +115,9 @@ public class SchedulerApplicationAttempt implements SchedulableEntity {
   // by NM should not be recovered.
   private Set<ContainerId> pendingRelease = null;
 
+  // The pendingDecrease list is created for the same purpose of pendingRelease.
+  private Set<ContainerResourceChangeRequest> pendingDecrease = null;
+
   /**
    * Count how many times the application has been given an opportunity to
    * schedule a task at each priority. Each time the scheduler asks the
@@ -152,6 +156,7 @@ public class SchedulerApplicationAttempt implements SchedulableEntity {
             activeUsersManager, rmContext.getEpoch(), attemptResourceUsage);
     this.queue = queue;
     this.pendingRelease = new HashSet<ContainerId>();
+    this.pendingDecrease = new HashSet<>();
     this.attemptId = applicationAttemptId;
     if (rmContext.getRMApps() != null &&
         rmContext.getRMApps()
@@ -209,6 +214,10 @@ public class SchedulerApplicationAttempt implements SchedulableEntity {
 
   public Set<ContainerId> getPendingRelease() {
     return this.pendingRelease;
+  }
+
+  public Set<ContainerResourceChangeRequest> getPendingDecrease() {
+    return this.pendingDecrease;
   }
 
   public long getNewContainerId() {

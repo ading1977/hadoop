@@ -47,7 +47,9 @@ import org.apache.hadoop.yarn.server.resourcemanager.rmapp.RMAppRunningOnNodeEve
 import org.apache.hadoop.yarn.server.resourcemanager.rmapp.attempt.RMAppAttempt;
 import org.apache.hadoop.yarn.server.resourcemanager.rmapp.attempt.event.RMAppAttemptContainerAllocatedEvent;
 import org.apache.hadoop.yarn.server.resourcemanager.rmapp.attempt.event.RMAppAttemptContainerFinishedEvent;
+import org.apache.hadoop.yarn.server.resourcemanager.rmnode.RMNodeChangeContainerResourceEvent;
 import org.apache.hadoop.yarn.server.resourcemanager.rmnode.RMNodeCleanContainerEvent;
+import org.apache.hadoop.yarn.server.resourcemanager.rmnode.RMNodeEventType;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.event.ContainerRescheduledEvent;
 import org.apache.hadoop.yarn.state.InvalidStateTransitionException;
 import org.apache.hadoop.yarn.state.MultipleArcTransition;
@@ -55,6 +57,7 @@ import org.apache.hadoop.yarn.state.SingleArcTransition;
 import org.apache.hadoop.yarn.state.StateMachine;
 import org.apache.hadoop.yarn.state.StateMachineFactory;
 import org.apache.hadoop.yarn.util.ConverterUtils;
+import org.apache.hadoop.yarn.util.resource.Resources;
 import org.apache.hadoop.yarn.webapp.util.WebAppUtils;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
@@ -89,7 +92,6 @@ public class RMContainerImpl implements RMContainer, Comparable<RMContainer> {
     .addTransition(RMContainerState.RESERVED, RMContainerState.RELEASED,
         RMContainerEventType.RELEASED) // nothing to do
        
-
     // Transitions from ALLOCATED state
     .addTransition(RMContainerState.ALLOCATED, RMContainerState.ACQUIRED,
         RMContainerEventType.ACQUIRED, new AcquiredTransition())
@@ -119,6 +121,8 @@ public class RMContainerImpl implements RMContainer, Comparable<RMContainer> {
         RMContainerEventType.RELEASED, new KillTransition())
     .addTransition(RMContainerState.RUNNING, RMContainerState.RUNNING,
         RMContainerEventType.EXPIRE)
+    .addTransition(RMContainerState.RUNNING, RMContainerState.RUNNING,
+        RMContainerEventType.DECREASED, new DecreaseTransition())
 
     // Transitions from COMPLETED state
     .addTransition(RMContainerState.COMPLETED, RMContainerState.COMPLETED,
@@ -163,6 +167,7 @@ public class RMContainerImpl implements RMContainer, Comparable<RMContainer> {
   private Priority reservedPriority;
   private long creationTime;
   private long finishTime;
+  private long lastUpdateTime;
   private ContainerStatus finishedStatus;
   private boolean isAMContainer;
   private List<ResourceRequest> resourceRequests;
@@ -193,6 +198,7 @@ public class RMContainerImpl implements RMContainer, Comparable<RMContainer> {
     this.appAttemptId = appAttemptId;
     this.user = user;
     this.creationTime = creationTime;
+    this.lastUpdateTime = creationTime;
     this.rmContext = rmContext;
     this.eventHandler = rmContext.getDispatcher().getEventHandler();
     this.containerAllocationExpirer = rmContext.getContainerAllocationExpirer();
@@ -262,9 +268,19 @@ public class RMContainerImpl implements RMContainer, Comparable<RMContainer> {
     return reservedPriority;
   }
 
+  private void setAllocatedResource(Resource targetResource) {
+    // No need to lock as this is called inside doTransition
+    container.setResource(Resources.clone(targetResource));
+  }
+
   @Override
   public Resource getAllocatedResource() {
-    return container.getResource();
+    try {
+      readLock.lock();
+      return Resources.clone(container.getResource());
+    } finally {
+      readLock.unlock();
+    }
   }
 
   @Override
@@ -521,6 +537,31 @@ public class RMContainerImpl implements RMContainer, Comparable<RMContainer> {
     }
   }
 
+  private static void updateAttemptMetrics(RMContainerImpl container) {
+    // If this is a preempted container, update preemption metrics
+    Resource resource = container.getContainer().getResource();
+    RMAppAttempt rmAttempt = container.rmContext.getRMApps()
+        .get(container.getApplicationAttemptId().getApplicationId())
+        .getCurrentAppAttempt();
+    if (ContainerExitStatus.PREEMPTED == container.finishedStatus
+        .getExitStatus()) {
+      rmAttempt.getRMAppAttemptMetrics().updatePreemptionInfo(resource,
+          container);
+    }
+
+    if (rmAttempt != null) {
+      long currentTime = System.currentTimeMillis();
+      long usedMillis = currentTime - container.lastUpdateTime;
+      container.lastUpdateTime = currentTime;
+      long memorySeconds = resource.getMemory()
+          * usedMillis / DateUtils.MILLIS_PER_SECOND;
+      long vcoreSeconds = resource.getVirtualCores()
+          * usedMillis / DateUtils.MILLIS_PER_SECOND;
+      rmAttempt.getRMAppAttemptMetrics()
+          .updateAggregateAppResourceUsage(memorySeconds,vcoreSeconds);
+    }
+  }
+
   private static class FinishedTransition extends BaseTransition {
 
     @Override
@@ -544,38 +585,15 @@ public class RMContainerImpl implements RMContainer, Comparable<RMContainer> {
       boolean saveNonAMContainerMetaInfo =
           container.rmContext.getYarnConfiguration().getBoolean(
               YarnConfiguration
-                .APPLICATION_HISTORY_SAVE_NON_AM_CONTAINER_META_INFO,
+                  .APPLICATION_HISTORY_SAVE_NON_AM_CONTAINER_META_INFO,
               YarnConfiguration
-                .DEFAULT_APPLICATION_HISTORY_SAVE_NON_AM_CONTAINER_META_INFO);
+                  .DEFAULT_APPLICATION_HISTORY_SAVE_NON_AM_CONTAINER_META_INFO);
 
       if (saveNonAMContainerMetaInfo || container.isAMContainer()) {
         container.rmContext.getSystemMetricsPublisher().containerFinished(
             container, container.finishTime);
       }
 
-    }
-
-    private static void updateAttemptMetrics(RMContainerImpl container) {
-      // If this is a preempted container, update preemption metrics
-      Resource resource = container.getContainer().getResource();
-      RMAppAttempt rmAttempt = container.rmContext.getRMApps()
-          .get(container.getApplicationAttemptId().getApplicationId())
-          .getCurrentAppAttempt();
-      if (ContainerExitStatus.PREEMPTED == container.finishedStatus
-        .getExitStatus()) {
-        rmAttempt.getRMAppAttemptMetrics().updatePreemptionInfo(resource,
-          container);
-      }
-
-      if (rmAttempt != null) {
-        long usedMillis = container.finishTime - container.creationTime;
-        long memorySeconds = resource.getMemory()
-                              * usedMillis / DateUtils.MILLIS_PER_SECOND;
-        long vcoreSeconds = resource.getVirtualCores()
-                             * usedMillis / DateUtils.MILLIS_PER_SECOND;
-        rmAttempt.getRMAppAttemptMetrics()
-                  .updateAggregateAppResourceUsage(memorySeconds,vcoreSeconds);
-      }
     }
   }
 
@@ -594,6 +612,35 @@ public class RMContainerImpl implements RMContainer, Comparable<RMContainer> {
 
       // Inform appAttempt
       super.transition(container, event);
+    }
+  }
+
+  private static final class DecreaseTransition extends BaseTransition {
+
+    @Override
+    public void transition(RMContainerImpl container, RMContainerEvent event) {
+      updateAttemptMetrics(container);
+      RMContainerResourceChangeEvent changeEvent =
+          (RMContainerResourceChangeEvent) event;
+      Resources.subtractFrom(
+          container.getAllocatedResource(), changeEvent.getResourceChanged());
+      // Inform node
+      Container decreasedContainer = Container.newInstance(
+          container.containerId, container.nodeId, null,
+          container.getAllocatedResource(), null, null);
+      container.eventHandler.handle(new RMNodeChangeContainerResourceEvent(
+          container.nodeId, decreasedContainer,
+              RMNodeEventType.CONTAINER_RESOURCE_DECREASED));
+      boolean saveNonAMContainerMetaInfo =
+          container.rmContext.getYarnConfiguration().getBoolean(
+              YarnConfiguration
+                  .APPLICATION_HISTORY_SAVE_NON_AM_CONTAINER_META_INFO,
+              YarnConfiguration
+                  .DEFAULT_APPLICATION_HISTORY_SAVE_NON_AM_CONTAINER_META_INFO);
+      if (saveNonAMContainerMetaInfo) {
+        container.rmContext.getSystemMetricsPublisher().containerResourceChanged(
+            container, container.lastUpdateTime);
+      }
     }
   }
 

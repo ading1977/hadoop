@@ -145,6 +145,10 @@ public class NodeInfo {
             NodeHeartbeatResponse response) {
     }
 
+    public void updateNodeHeartbeatResponseForContainerResourceDecrease(
+        NodeHeartbeatResponse response) {
+    }
+
     public NodeHeartbeatResponse getLastNodeHeartBeatResponse() {
       return null;
     }

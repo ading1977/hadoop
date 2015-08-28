@@ -23,7 +23,7 @@ import org.apache.hadoop.yarn.api.records.NodeId;
 
 import java.util.List;
 
-// Happens after an implicit ack from AM that the container completion has
+// Happens after an implicit ack from AM that the changedContainer completion has
 // been notified successfully to the AM
 public class RMNodeFinishedContainersPulledByAMEvent extends RMNodeEvent {
 

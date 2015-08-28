@@ -32,6 +32,7 @@ import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerId;
+import org.apache.hadoop.yarn.api.records.ContainerResourceChangeRequest;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
 import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.api.records.QueueACL;
@@ -689,8 +690,8 @@ public class FairScheduler extends
       }
     } else {
       rmContext.getDispatcher().getEventHandler().handle(
-        new RMAppAttemptEvent(applicationAttemptId,
-            RMAppAttemptEventType.ATTEMPT_ADDED));
+          new RMAppAttemptEvent(applicationAttemptId,
+              RMAppAttemptEventType.ATTEMPT_ADDED));
     }
   }
 
@@ -802,6 +803,12 @@ public class FairScheduler extends
     }
   }
 
+  @Override
+  protected synchronized void decreasedContainer(
+      RMContainer rmContainer, Resource targetResource) {
+    // TODO:
+  }
+
   /**
    * Clean up a completed container.
    */
@@ -904,6 +911,8 @@ public class FairScheduler extends
   @Override
   public Allocation allocate(ApplicationAttemptId appAttemptId,
       List<ResourceRequest> ask, List<ContainerId> release,
+      List<ContainerResourceChangeRequest> increase,
+      List<ContainerResourceChangeRequest> decrease,
       List<String> blacklistAdditions, List<String> blacklistRemovals) {
 
     // Make sure this application exists

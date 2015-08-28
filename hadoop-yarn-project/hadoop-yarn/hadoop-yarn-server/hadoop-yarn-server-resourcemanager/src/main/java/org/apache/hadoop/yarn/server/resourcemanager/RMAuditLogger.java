@@ -54,6 +54,7 @@ public class RMAuditLogger {
     public static final String UNREGISTER_AM = "Unregister App Master";
     public static final String ALLOC_CONTAINER = "AM Allocated Container";
     public static final String RELEASE_CONTAINER = "AM Released Container";
+    public static final String DECREASE_CONTAINER = "AM Decreased Container";
     public static final String UPDATE_APP_PRIORITY =
         "Update Application Priority Request";
 

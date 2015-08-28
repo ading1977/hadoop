@@ -47,6 +47,7 @@ import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerExitStatus;
+import org.apache.hadoop.yarn.api.records.ContainerResourceChangeRequest;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
 import org.apache.hadoop.yarn.api.records.Resource;
@@ -176,15 +177,17 @@ public class SLSCapacityScheduler extends CapacityScheduler implements
 
   @Override
   public Allocation allocate(ApplicationAttemptId attemptId,
-                             List<ResourceRequest> resourceRequests,
-                             List<ContainerId> containerIds,
-                             List<String> strings, List<String> strings2) {
+      List<ResourceRequest> resourceRequests,
+      List<ContainerId> containerIds,
+      List<ContainerResourceChangeRequest> increase,
+      List<ContainerResourceChangeRequest> decrease,
+      List<String> strings, List<String> strings2) {
     if (metricsON) {
       final Timer.Context context = schedulerAllocateTimer.time();
       Allocation allocation = null;
       try {
         allocation = super.allocate(attemptId, resourceRequests,
-                containerIds, strings, strings2);
+                containerIds, increase, decrease, strings, strings2);
         return allocation;
       } finally {
         context.stop();
@@ -198,7 +201,7 @@ public class SLSCapacityScheduler extends CapacityScheduler implements
       }
     } else {
       return super.allocate(attemptId,
-              resourceRequests, containerIds, strings, strings2);
+              resourceRequests, containerIds, increase, decrease, strings, strings2);
     }
   }
 

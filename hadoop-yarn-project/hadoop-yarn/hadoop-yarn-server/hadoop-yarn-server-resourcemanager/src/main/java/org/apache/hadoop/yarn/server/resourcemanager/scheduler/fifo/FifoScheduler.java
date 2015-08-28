@@ -40,6 +40,7 @@ import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerId;
+import org.apache.hadoop.yarn.api.records.ContainerResourceChangeRequest;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
 import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.api.records.Priority;
@@ -312,7 +313,10 @@ public class FifoScheduler extends
   @Override
   public Allocation allocate(
       ApplicationAttemptId applicationAttemptId, List<ResourceRequest> ask,
-      List<ContainerId> release, List<String> blacklistAdditions, List<String> blacklistRemovals) {
+      List<ContainerId> release,
+      List<ContainerResourceChangeRequest> increase,
+      List<ContainerResourceChangeRequest> decrease,
+      List<String> blacklistAdditions, List<String> blacklistRemovals) {
     FiCaSchedulerApp application = getApplicationAttempt(applicationAttemptId);
     if (application == null) {
       LOG.error("Calling allocate on removed " +
@@ -418,8 +422,8 @@ public class FifoScheduler extends
       }
     } else {
       rmContext.getDispatcher().getEventHandler().handle(
-        new RMAppAttemptEvent(appAttemptId,
-            RMAppAttemptEventType.ATTEMPT_ADDED));
+          new RMAppAttemptEvent(appAttemptId,
+              RMAppAttemptEventType.ATTEMPT_ADDED));
     }
   }
 
@@ -434,7 +438,7 @@ public class FifoScheduler extends
 
     // Inform the activeUsersManager
     activeUsersManager.deactivateApplication(application.getUser(),
-      applicationId);
+        applicationId);
     application.stop(finalState);
     applications.remove(applicationId);
   }
@@ -761,12 +765,12 @@ public class FifoScheduler extends
 
   private void updateAppHeadRoom(SchedulerApplicationAttempt schedulerAttempt) {
     schedulerAttempt.setHeadroom(Resources.subtract(clusterResource,
-      usedResource));
+        usedResource));
   }
 
   private void updateAvailableResourcesMetrics() {
     metrics.setAvailableResourcesToQueue(Resources.subtract(clusterResource,
-      usedResource));
+        usedResource));
   }
 
   @Override
@@ -864,6 +868,12 @@ public class FifoScheduler extends
     default:
       LOG.error("Invalid eventtype " + event.getType() + ". Ignoring!");
     }
+  }
+
+  @Override
+  protected synchronized void decreasedContainer(
+      RMContainer rmContainer, Resource targetResource) {
+    // TODO:
   }
 
   @Lock(FifoScheduler.class)

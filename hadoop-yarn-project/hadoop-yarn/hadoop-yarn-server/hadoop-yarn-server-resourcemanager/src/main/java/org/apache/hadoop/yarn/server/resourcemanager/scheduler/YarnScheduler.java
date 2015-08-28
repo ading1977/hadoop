@@ -34,6 +34,7 @@ import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ApplicationResourceUsageReport;
 import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerId;
+import org.apache.hadoop.yarn.api.records.ContainerResourceChangeRequest;
 import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.api.records.Priority;
 import org.apache.hadoop.yarn.api.records.QueueACL;
@@ -130,6 +131,8 @@ public interface YarnScheduler extends EventHandler<SchedulerEvent> {
    * @param appAttemptId
    * @param ask
    * @param release
+   * @param increase
+   * @param decrease
    * @param blacklistAdditions 
    * @param blacklistRemovals 
    * @return the {@link Allocation} for the application
@@ -139,7 +142,9 @@ public interface YarnScheduler extends EventHandler<SchedulerEvent> {
   Allocation 
   allocate(ApplicationAttemptId appAttemptId, 
       List<ResourceRequest> ask,
-      List<ContainerId> release, 
+      List<ContainerId> release,
+      List<ContainerResourceChangeRequest> increase,
+      List<ContainerResourceChangeRequest> decrease,
       List<String> blacklistAdditions, 
       List<String> blacklistRemovals);
 

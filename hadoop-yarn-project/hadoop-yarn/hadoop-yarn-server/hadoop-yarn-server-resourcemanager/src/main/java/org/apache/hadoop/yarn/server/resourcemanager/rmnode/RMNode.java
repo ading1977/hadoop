@@ -128,6 +128,14 @@ public interface RMNode {
    */
   public void updateNodeHeartbeatResponseForCleanup(NodeHeartbeatResponse response);
 
+  /**
+   * Update a {@link NodeHeartbeatResponse} with the list of containers whose
+   * resource has been decreased on this node.
+   * @param response the {@link NodeHeartbeatResponse} to update
+   */
+  public void updateNodeHeartbeatResponseForContainerResourceDecrease(
+      NodeHeartbeatResponse response);
+
   public NodeHeartbeatResponse getLastNodeHeartBeatResponse();
 
   /**
